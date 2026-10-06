@@ -2,9 +2,15 @@ import streamlit as st
 import pandas as pd
 import datetime
 import os
-from PIL import Image # Tambah import ni untuk load gambar
+from PIL import Image
+from io import BytesIO
 
-# --- FUNGSI PERSEDIAAN ---
+# --- PENGHASILAN PDF REPORT ---
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+
 st.set_page_config(
     page_title="ProfLegacy - Gold Trading Journal",
     layout="wide"
@@ -26,20 +32,94 @@ def save_data(df):
 
 df = load_data()
 
-# --- SIDEBAR DENGAN LOGO PROFLEGACY ---
-# Anda perlu letakkan fail image_15.png (logo) dalam folder GitHub yang sama dengan app.py
+# --- FUNGSI GENERATE PDF REPORT ---
+def generate_pdf_report(dataframe):
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+    elements = []
+    
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'TitleStyle',
+        parent=styles['Heading1'],
+        fontSize=18,
+        textColor=colors.HexColor('#1f2937'),
+        spaceAfter=15,
+        alignment=1 # Center
+    )
+    
+    heading_style = ParagraphStyle(
+        'HeadingStyle',
+        parent=styles['Heading2'],
+        fontSize=12,
+        textColor=colors.HexColor('#374151'),
+        spaceAfter=10
+    )
+    
+    # Tajuk Report
+    elements.append(Paragraph("<b>PROFLEGACY - GOLD TRADING JOURNAL REPORT BULANAN</b>", title_style))
+    elements.append(Paragraph(f"Tarikh Laporan Dikeluarkan: {datetime.date.today().strftime('%d-%m-%Y')}", heading_style))
+    elements.append(Spacer(1, 10))
+    
+    # Ringkasan Statistik
+    total_deposit = dataframe["Deposit ($)"].sum()
+    total_profit = dataframe["Profit ($)"].sum()
+    total_loss = dataframe["Loss ($)"].sum()
+    total_net_pl = dataframe["Net P/L ($)"].sum()
+    
+    summary_data = [
+        ['Total Deposit', f"${total_deposit:.2f}"],
+        ['Total Profit', f"${total_profit:.2f}"],
+        ['Total Loss', f"${total_loss:.2f}"],
+        ['Net P/L Keseluruhan', f"${total_net_pl:.2f}"]
+    ]
+    
+    t_summary = Table(summary_data, colWidths=[200, 200])
+    t_summary.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f3f4f6')),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#d1d5db')),
+        ('PADDING', (0,0), (-1,-1), 6),
+        ('FONTNAME', (0,0), (-1,-1), 'Helvetica-Bold'),
+    ]))
+    
+    elements.append(t_summary)
+    elements.append(Spacer(1, 20))
+    elements.append(Paragraph("<b>Rekod Harian Trading</b>", heading_style))
+    
+    # Jadual Data
+    if not dataframe.empty:
+        table_data = [list(dataframe.columns)]
+        for _, row in dataframe.iterrows():
+            table_data.append([str(val) for val in row.values])
+            
+        t_data = Table(table_data, repeatRows=1)
+        t_data.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#1e3a8a')),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0,0), (-1,0), 8),
+            ('BOTTOMPADDING', (0,0), (-1,0), 6),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#d1d5db')),
+            ('FONTSIZE', (0,1), (-1,-1), 7),
+            ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#f9fafb')])
+        ]))
+        elements.append(t_data)
+        
+    doc.build(elements)
+    buffer.seek(0)
+    return buffer
+
+# --- SIDEBAR ---
 try:
-    logo_img = Image.open("image_15.png")
-    st.sidebar.image(logo_img, width=250) # Letak logo di sidebar, saiz 250px
+    logo_img = Image.open("logo_proflegacy.png")
+    st.sidebar.image(logo_img, width=250)
 except FileNotFoundError:
-    st.sidebar.error("Fail logo 'image_15.png' tidak dijumpai. Sila muat naik ke GitHub.")
-    st.sidebar.title("ProfLegacy") # Fallback kalau gambar takde
+    st.sidebar.title("ProfLegacy")
 
 st.sidebar.markdown("---")
-menu = st.sidebar.selectbox("Menu", ["📊 Dashboard", "📝 Isi Rekod Harian", "📋 Paparan Jadual Excel"])
+menu = st.sidebar.selectbox("Menu", ["📊 Dashboard", "📝 Isi Rekod Harian", "📋 Paparan Jadual & Export PDF"])
 
-# --- DASHBOARD / REKOD UTAMA ---
-# Tambah lambang carta emas dari imej di sebelah tajuk
 st.title("📊 GOLD TRADING JOURNAL | ProfLegacy")
 st.markdown("---")
 
@@ -61,12 +141,6 @@ if menu == "📊 Dashboard":
         c1.metric("Total Deposit", f"${total_deposit:.2f}")
         c2.metric("Net P/L Keseluruhan", f"${total_net_pl:.2f}", delta=f"${total_net_pl:.2f}")
         c3.metric("Win Rate Harian", f"{win_rate:.1f}%")
-        
-        # Tambah Metrik Tambahan Kecil
-        c4, c5, c6 = st.columns(3)
-        c4.metric("Total Profit", f"${total_profit:.2f}", help="Jumlah hari untung sahaja")
-        c5.metric("Total Loss", f"${total_loss:.2f}", help="Jumlah hari rugi sahaja")
-        c6.metric("Hari Profit", f"{win_days} / {total_days} Hari")
 
 # 2. ISI REKOD HARIAN
 elif menu == "📝 Isi Rekod Harian":
@@ -89,7 +163,6 @@ elif menu == "📝 Isi Rekod Harian":
         
         if simpan:
             net_pl = profit - loss
-            
             new_row = pd.DataFrame([{
                 "Hari": hari,
                 "Tarikh": str(tarikh),
@@ -101,25 +174,35 @@ elif menu == "📝 Isi Rekod Harian":
                 "Balance ($)": balance,
                 "Notes": notes
             }])
-            
             df = pd.concat([df, new_row], ignore_index=True)
             df = df.sort_values(by="Hari").reset_index(drop=True)
             save_data(df)
             st.success("Rekod harian berjaya disimpan!")
             st.balloons()
 
-# 3. PAPARAN JADUAL EXCEL
-elif menu == "📋 Paparan Jadual Excel":
-    st.subheader("Jadual Utama Journal")
+# 3. PAPARAN JADUAL & EXPORT PDF
+elif menu == "📋 Paparan Jadual & Export PDF":
+    st.subheader("Jadual Utama & Muat Turun Laporan PDF")
     if df.empty:
-        st.info("Tiada rekod lagi. Sila isi di menu **'Isi Rekod Harian'**.")
+        st.info("Tiada rekod lagi untuk dieksport.")
     else:
         st.dataframe(df, use_container_width=True)
+        st.markdown("---")
+        
+        # Butang Download PDF
+        pdf_file = generate_pdf_report(df)
+        st.download_button(
+            label="📄 Muat Turun Report PDF Bulanan",
+            data=pdf_file,
+            file_name=f"ProfLegacy_Journal_Report_{datetime.date.today().strftime('%B_%Y')}.pdf",
+            mime="application/pdf"
+        )
+        
+        st.markdown("---")
         if st.button("Padam Semua Data"):
             if os.path.exists(DATA_FILE):
                 os.remove(DATA_FILE)
                 st.rerun()
 
-# Footer Kecil
 st.markdown("---")
 st.markdown("##### ProfLegacy - Mastering Market Structure & Price Action Precision")
