@@ -4,6 +4,7 @@ import datetime
 import os
 from PIL import Image
 from io import BytesIO
+import base64
 
 # --- PENGHASILAN PDF REPORT ---
 from reportlab.lib.pagesizes import A4
@@ -15,6 +16,41 @@ st.set_page_config(
     page_title="ProfLegacy - Gold Trading Journal",
     layout="wide"
 )
+
+# --- CSS KHAS UNTUK BACKGROUND WATERMARK & MOBILE RESPONSIVE ---
+def set_background_and_style():
+    logo_path = "logo_proflegacy.png"
+    encoded_logo = ""
+    if os.path.exists(logo_path):
+        with open(logo_path, "rb") as f:
+            encoded_logo = base64.b64encode(f.read()).decode()
+            
+    css = f"""
+    <style>
+    /* Tetapan Background Watermark pada Streamlit (Blur/Translucent) */
+    .stApp {{
+        background: linear-gradient(rgba(255, 255, 255, 0.93), rgba(255, 255, 255, 0.93)) {'url(data:image/png;base64,' + encoded_logo + ')' if encoded_logo else ''};
+        background-repeat: no-repeat;
+        background-position: center;
+        background-attachment: fixed;
+        background-size: 40% auto;
+    }}
+    
+    /* Mobile-friendly card adjustments */
+    @media (max-width: 768px) {{
+        .stMetric {{
+            background-color: #f8fafc;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 10px;
+        }}
+    }}
+    </style>
+    """
+    st.markdown(css, unsafe_allow_html=True)
+
+set_background_and_style()
 
 DATA_FILE = "proflegacy_journal_users.csv"
 
@@ -81,10 +117,8 @@ if menu == "📊 Dashboard":
         total_days = len(df_user)
         win_rate = (win_days / total_days) * 100 if total_days > 0 else 0
         
-        # Kiraan Profit Factor
         profit_factor = (total_profit / total_loss) if total_loss > 0 else (total_profit if total_profit > 0 else 0.0)
         
-        # Kiraan R-Expectancy (Anggaran purata pulangan per trade)
         if total_days > 0:
             avg_win = win_days_df["Profit ($)"].mean() if win_days > 0 else 0.0
             avg_loss = loss_days_df["Loss ($)"].mean() if loss_days > 0 else 0.0
@@ -98,7 +132,7 @@ if menu == "📊 Dashboard":
         drawdown = df_user["Balance ($)"] - rolling_max
         max_drawdown = drawdown.min() if not drawdown.empty else 0.0
 
-        # Kotak Metrik Atas
+        # Kotak Metrik Atas (Responsif)
         m1, m2, m3, m4 = st.columns(4)
         m1.metric("MODAL AWAL", f"${modal_awal:.2f}")
         m2.metric("BALANCE AKHIR", f"${balance_akhir:.2f}")
@@ -178,6 +212,15 @@ elif menu == "📋 Paparan Jadual & Export PDF":
         st.dataframe(df_user.drop(columns=["Nama"]), use_container_width=True)
         st.markdown("---")
         
+        def draw_watermark(canvas, doc):
+            canvas.saveState()
+            logo_path = "logo_proflegacy.png"
+            if os.path.exists(logo_path):
+                # Watermark telus di tengah PDF
+                canvas.setFillAlpha(0.08)
+                canvas.drawImage(logo_path, 100, 300, width=400, height=200, preserveAspectRatio=True, mask='auto')
+            canvas.restoreState()
+
         def generate_pdf_report(dataframe, name):
             buffer = BytesIO()
             doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
@@ -229,7 +272,8 @@ elif menu == "📋 Paparan Jadual & Export PDF":
                 ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#f9fafb')])
             ]))
             elements.append(t_data)
-            doc.build(elements)
+            
+            doc.build(elements, onFirstPage=draw_watermark, onLaterPages=draw_watermark)
             buffer.seek(0)
             return buffer
 
