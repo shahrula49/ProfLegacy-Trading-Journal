@@ -17,7 +17,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- CSS KHAS UNTUK BACKGROUND WATERMARK & MOBILE RESPONSIVE ---
+# --- CSS KHAS UNTUK BACKGROUND WATERMARK (FIXED UNTUK MOBILE & WEB) ---
 def set_background_and_style():
     logo_path = "logo_proflegacy.png"
     encoded_logo = ""
@@ -27,19 +27,19 @@ def set_background_and_style():
             
     css = f"""
     <style>
-    /* Tetapan Background Watermark pada Streamlit (Blur/Translucent) */
-    .stApp {{
-        background: linear-gradient(rgba(255, 255, 255, 0.93), rgba(255, 255, 255, 0.93)) {'url(data:image/png;base64,' + encoded_logo + ')' if encoded_logo else ''};
-        background-repeat: no-repeat;
-        background-position: center;
-        background-attachment: fixed;
-        background-size: 40% auto;
+    /* Pemilih rasmi Streamlit untuk latar belakang utama aplikasi */
+    .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"] {{
+        background: linear-gradient(rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.92)) {'url(data:image/png;base64,' + encoded_logo + ')' if encoded_logo else ''} !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-attachment: fixed !important;
+        background-size: 50% auto !important;
     }}
     
     /* Mobile-friendly card adjustments */
     @media (max-width: 768px) {{
         .stMetric {{
-            background-color: #f8fafc;
+            background-color: rgba(248, 250, 252, 0.9);
             padding: 10px;
             border-radius: 8px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
@@ -216,7 +216,6 @@ elif menu == "📋 Paparan Jadual & Export PDF":
             canvas.saveState()
             logo_path = "logo_proflegacy.png"
             if os.path.exists(logo_path):
-                # Watermark telus di tengah PDF
                 canvas.setFillAlpha(0.08)
                 canvas.drawImage(logo_path, 100, 300, width=400, height=200, preserveAspectRatio=True, mask='auto')
             canvas.restoreState()
