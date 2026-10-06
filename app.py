@@ -17,7 +17,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- CSS KHAS UNTUK BACKGROUND WATERMARK (DIKEMASKINI: image_15.png) ---
+# --- CSS KHAS UNTUK WATERMARK LATAR BELAKANG & STYLING ---
 def set_background_and_style():
     logo_path = "image_15.png"
     encoded_logo = ""
@@ -27,13 +27,21 @@ def set_background_and_style():
             
     css = f"""
     <style>
-    /* Tetapan Latar Belakang Logo Watermark (Blur/Translucent) */
-    .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"] {{
-        background: linear-gradient(rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.92)) {'url(data:image/png;base64,' + encoded_logo + ')' if encoded_logo else ''} !important;
+    /* Tetapan Latar Belakang Watermark (Blur/Translucent) & Buang Putih Legap */
+    .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"], .main {{
+        background-color: rgba(255, 255, 255, 0.88) !important;
+        background-image: {'url(data:image/png;base64,' + encoded_logo + ')' if encoded_logo else ''} !important;
         background-repeat: no-repeat !important;
         background-position: center !important;
         background-attachment: fixed !important;
         background-size: 50% auto !important;
+    }}
+
+    /* Kontena kotak elemen disetkan sedikit telus supaya watermark nampak tembus */
+    [data-testid="stVerticalBlock"] > div {{
+        background-color: rgba(255, 255, 255, 0.82);
+        border-radius: 8px;
+        padding: 5px;
     }}
     
     /* Mobile-friendly card adjustments */
