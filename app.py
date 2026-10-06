@@ -17,9 +17,9 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- CSS KHAS UNTUK BACKGROUND WATERMARK (FIXED UNTUK MOBILE & WEB) ---
+# --- CSS KHAS UNTUK BACKGROUND WATERMARK (DIKEMASKINI: image_15.png) ---
 def set_background_and_style():
-    logo_path = "logo_proflegacy.png"
+    logo_path = "image_15.png"
     encoded_logo = ""
     if os.path.exists(logo_path):
         with open(logo_path, "rb") as f:
@@ -27,7 +27,7 @@ def set_background_and_style():
             
     css = f"""
     <style>
-    /* Pemilih rasmi Streamlit untuk latar belakang utama aplikasi */
+    /* Tetapan Latar Belakang Logo Watermark (Blur/Translucent) */
     .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"] {{
         background: linear-gradient(rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.92)) {'url(data:image/png;base64,' + encoded_logo + ')' if encoded_logo else ''} !important;
         background-repeat: no-repeat !important;
@@ -70,7 +70,7 @@ df_all = load_all_data()
 
 # --- SIDEBAR: PILIH NAMA TRADER & MENU ---
 try:
-    logo_img = Image.open("logo_proflegacy.png")
+    logo_img = Image.open("image_15.png")
     st.sidebar.image(logo_img, width=220)
 except FileNotFoundError:
     st.sidebar.title("ProfLegacy")
@@ -214,7 +214,7 @@ elif menu == "📋 Paparan Jadual & Export PDF":
         
         def draw_watermark(canvas, doc):
             canvas.saveState()
-            logo_path = "logo_proflegacy.png"
+            logo_path = "image_15.png"
             if os.path.exists(logo_path):
                 canvas.setFillAlpha(0.08)
                 canvas.drawImage(logo_path, 100, 300, width=400, height=200, preserveAspectRatio=True, mask='auto')
