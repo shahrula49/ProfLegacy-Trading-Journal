@@ -13,15 +13,14 @@ st.set_page_config(
 # Nama fail tempat simpan data trade secara automatik
 DATA_FILE = "trading_data.csv"
 
-# Fungsi untuk muat turun data
-@st.cache_data(experimental_allow_widgets=True)
+# Fungsi untuk muat turun data (Diperbetulkan tanpa experimental_allow_widgets)
 def load_data():
     if os.path.exists(DATA_FILE):
         return pd.read_csv(DATA_FILE)
     else:
         # Data kosong permulaan jika belum ada trade
         return pd.DataFrame(columns=[
-            "Tarikh", "Pair", "Jenis", "Lot", "Harga Masuk", "Harga Keluar", "Profit/Loss ($", "Nota"
+            "Tarikh", "Pair", "Jenis", "Lot", "Harga Masuk", "Harga Keluar", "Profit/Loss ($)", "Nota"
         ])
 
 def save_data(df):
@@ -44,8 +43,8 @@ if menu == "📊 Dashboard":
     else:
         # Kiraan metrik utama
         total_trades = len(df)
-        total_pl = df["Profit/Loss ($"].sum()
-        winning_trades = len(df[df["Profit/Loss ($"] > 0])
+        total_pl = df["Profit/Loss ($)"].sum()
+        winning_trades = len(df[df["Profit/Loss ($)"] > 0])
         win_rate = (winning_trades / total_trades) * 100 if total_trades > 0 else 0
         
         # Paparan kad metrik
@@ -60,7 +59,7 @@ if menu == "📊 Dashboard":
         if "Tarikh" in df.columns and not df.empty:
             df['Tarikh'] = pd.to_datetime(df['Tarikh'])
             df_sorted = df.sort_values("Tarikh")
-            df_sorted['Kumulatif PL'] = df_sorted["Profit/Loss ($"].cumsum()
+            df_sorted['Kumulatif PL'] = df_sorted["Profit/Loss ($)"].cumsum()
             st.line_chart(df_sorted.set_index("Tarikh")["Kumulatif PL"])
 
 # ==================== 2. MASUK TRADE BARU ====================
@@ -91,7 +90,7 @@ elif menu == "📝 Masuk Trade Baru (Manual)":
                 "Lot": lot,
                 "Harga Masuk": harga_masuk,
                 "Harga Keluar": harga_keluar,
-                "Profit/Loss ($": profit_loss,
+                "Profit/Loss ($)": profit_loss,
                 "Nota": nota
             }])
             
@@ -111,4 +110,4 @@ elif menu == "📋 Senarai Journal":
         if st.button("Padam Semua Data Rekod"):
             if os.path.exists(DATA_FILE):
                 os.remove(DATA_FILE)
-                st.experimental_rerun()
+                st.rerun()
