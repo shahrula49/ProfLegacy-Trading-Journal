@@ -36,24 +36,10 @@ def set_clean_style():
 set_clean_style()
 
 DATA_FILE = "proflegacy_journal_users.csv"
-NEWS_FILE = "economic_news.csv"
 UPLOAD_DIR = "uploaded_screenshots"
 
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
-
-# Fail CSV rujukan berita harian jika belum wujud
-if not os.path.exists(NEWS_FILE):
-    default_news = pd.DataFrame([
-        {"Tarikh": "2026-10-08", "Masa (MYT)": "02:00", "Tahap Impak": "High", "Peristiwa": "FOMC Minutes", "Mata Wang": "USD"},
-        {"Tarikh": "2026-10-08", "Masa (MYT)": "20:30", "Tahap Impak": "High", "Peristiwa": "Jobless Claims 4-week Average", "Mata Wang": "USD"},
-        {"Tarikh": "2026-10-08", "Masa (MYT)": "20:30", "Tahap Impak": "High", "Peristiwa": "Continuing Jobless Claims", "Mata Wang": "USD"},
-        {"Tarikh": "2026-10-08", "Masa (MYT)": "20:30", "Tahap Impak": "High", "Peristiwa": "Initial Jobless Claims", "Mata Wang": "USD"},
-        {"Tarikh": "2026-10-08", "Masa (MYT)": "23:00", "Tahap Impak": "Med", "Peristiwa": "Atlanta Fed GDPNow", "Mata Wang": "USD"},
-        {"Tarikh": "2026-10-09", "Masa (MYT)": "01:40", "Tahap Impak": "Med", "Peristiwa": "Fed Musalem Speech", "Mata Wang": "USD"},
-        {"Tarikh": "2026-10-09", "Masa (MYT)": "22:00", "Tahap Impak": "High", "Peristiwa": "Michigan Consumer Sentiment", "Mata Wang": "USD"}
-    ])
-    default_news.to_csv(NEWS_FILE, index=False)
 
 def load_all_data():
     if os.path.exists(DATA_FILE):
@@ -90,7 +76,6 @@ st.sidebar.markdown("---")
 st.sidebar.subheader("Menu Navigasi Utama")
 
 menu = st.sidebar.radio("Pilih Menu:", [
-    "📚 Panduan & Kalendar Berita",
     "📊 Dashboard", 
     "📝 Isi Rekod Harian", 
     "📋 Paparan Jadual & Export PDF",
@@ -100,44 +85,11 @@ menu = st.sidebar.radio("Pilih Menu:", [
 df_user = df_all[df_all["Nama"].str.lower() == trader_name.lower()] if not df_all.empty else pd.DataFrame(columns=df_all.columns)
 
 st.title(f"📊 GOLD TRADING DASHBOARD | {trader_name.upper()}")
-st.markdown("Sistem jurnal harian XAUUSD profesional, semakan screenshot trade history, kalendar ekonomi, dan eksport laporan.")
+st.markdown("Sistem jurnal harian XAUUSD profesional, semakan screenshot trade history, dan eksport laporan.")
 st.markdown("---")
 
-# 1. PANDUAN & KALENDAR BERITA (SUMBER CSV FLEKSIBEL)
-if menu == "📚 Panduan & Kalendar Berita":
-    st.subheader("📚 Kalendar Berita Ekonomi Harian (XAUUSD)")
-    st.markdown("Pilih tarikh di bawah untuk memaparkan senarai berita ekonomi rasmi pada hari tersebut.")
-    st.markdown("---")
-    
-    # Pemilih Tarikh Dinamik
-    selected_news_date = st.date_input("Pilih Tarikh Kalendar Berita:", datetime.date(2026, 10, 8))
-    date_str = str(selected_news_date)
-    
-    st.markdown(f"### 🗓️ Jadual Berita Ekonomi — {selected_news_date.strftime('%A, %d %B %Y')}")
-    
-    # Baca data daripada fail CSV luaran (economic_news.csv)
-    if os.path.exists(NEWS_FILE):
-        news_df = pd.read_csv(NEWS_FILE)
-        # Tapisan mengikut tarikh yang dipilih pengguna
-        filtered_news = news_df[news_df["Tarikh"] == date_str]
-        
-        if not filtered_news.empty:
-            display_news = filtered_news.drop(columns=["Tarikh"])
-            st.dataframe(display_news, use_container_width=True, hide_index=True)
-        else:
-            st.info(f"Tiada rekod berita ekonomi rasmi dimasukkan untuk tarikh {date_str} ini.")
-    else:
-        st.warning("Fail pangkalan data berita (`economic_news.csv`) tidak dijumpai.")
-        
-    st.markdown("---")
-    st.markdown("### 💡 Panduan Tindakan Trader Semasa Berita High Impact:")
-    st.success("""
-    * **Elakkan "Open Position" Baru:** Jangan buka posisi sekurang-kurangnya 15 minit sebelum waktu berita berimpak tinggi (*High*).
-    * **Kawalan Risiko:** Pastikan Stop Loss sentiasa dipasang bagi mengelakkan lonjakan harga (*spike*) yang mendadak.
-    """)
-
-# 2. DASHBOARD
-elif menu == "📊 Dashboard":
+# 1. DASHBOARD
+if menu == "📊 Dashboard":
     if df_user.empty:
         st.info(f"Belum ada rekod untuk **{trader_name}**. Sila isi data di menu **'Isi Rekod Harian'**.")
     else:
@@ -213,7 +165,7 @@ elif menu == "📊 Dashboard":
                 chart_data = df_user.set_index("Hari")[["Balance ($)"]]
                 st.line_chart(chart_data, color="#22c55e")
 
-# 3. ISI REKOD HARIAN
+# 2. ISI REKOD HARIAN
 elif menu == "📝 Isi Rekod Harian":
     st.subheader(f"Borang Masuk Data Harian & Upload Trade History - [{trader_name}]")
     
@@ -262,7 +214,7 @@ elif menu == "📝 Isi Rekod Harian":
             st.success(f"Rekod harian dan bukti screenshot untuk **{trader_name}** berjaya disimpan!")
             st.balloons()
 
-# 4. PAPARAN JADUAL & EXPORT PDF EKSKLUSIF
+# 3. PAPARAN JADUAL & EXPORT PDF EKSKLUSIF
 elif menu == "📋 Paparan Jadual & Export PDF":
     st.subheader(f"Jadual & Laporan PDF Eksklusif - [{trader_name}]")
     if df_user.empty:
@@ -373,7 +325,7 @@ elif menu == "📋 Paparan Jadual & Export PDF":
             save_all_data(df_all)
             st.rerun()
 
-# 5. SENARAI PENGGUNA
+# 4. SENARAI PENGGUNA
 elif menu == "👥 Senarai Pengguna":
     st.subheader("Senarai Nama Trader Yang Menggunakan Sistem")
     if df_all.empty:
