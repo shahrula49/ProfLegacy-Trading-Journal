@@ -12,7 +12,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
 st.set_page_config(
-    page_title="ProfLegacy - Gold Trading Journal & Analytics",
+    page_title="ProfLegacy - Gold Trading Journal",
     layout="wide"
 )
 
@@ -40,17 +40,15 @@ DATA_FILE = "proflegacy_journal_users.csv"
 def load_all_data():
     if os.path.exists(DATA_FILE):
         df = pd.read_csv(DATA_FILE)
-        # Pastikan kolum baharu wujud untuk keserasian fail lama
-        required_cols = ["RRR", "Risiko ($)", "Sesi"]
-        for col in required_cols:
-            if col not in df.columns:
-                df[col] = "1:2" if col == "RRR" else (10.0 if col == "Risiko ($)" else "London")
+        # Buang kolum lama yang tidak diperlukan jika ada dalam fail lama
+        for col in ["RRR", "Risiko ($)", "Sesi"]:
+            if col in df.columns:
+                df = df.drop(columns=[col])
         return df
     else:
         return pd.DataFrame(columns=[
-            "Nama", "Hari", "Tarikh", "Sesi", "RRR", "Risiko ($)", 
-            "Deposit ($)", "Profit ($)", "Loss ($)", "Net P/L ($)", 
-            "Withdrawal ($)", "Balance ($)", "Notes"
+            "Nama", "Hari", "Tarikh", "Deposit ($)", "Profit ($)", "Loss ($)", 
+            "Net P/L ($)", "Withdrawal ($)", "Balance ($)", "Notes"
         ])
 
 def save_all_data(df):
@@ -74,8 +72,8 @@ if not trader_name:
 
 st.sidebar.markdown("---")
 menu = st.sidebar.selectbox("Menu Utama", [
-    "📊 Dashboard Lanjutan", 
-    "📝 Isi Rekod & Kalkulator Risiko", 
+    "📊 Dashboard", 
+    "📝 Isi Rekod Harian", 
     "📋 Paparan Jadual & Export PDF Eksklusif",
     "👥 Senarai Pengguna"
 ])
@@ -83,13 +81,13 @@ menu = st.sidebar.selectbox("Menu Utama", [
 df_user = df_all[df_all["Nama"].str.lower() == trader_name.lower()] if not df_all.empty else pd.DataFrame(columns=df_all.columns)
 
 st.title(f"📊 GOLD TRADING DASHBOARD | {trader_name.upper()}")
-st.markdown("Sistem jurnal profesional XAUUSD lengkap dengan pengurusan risiko RRR, analitik lanjutan, dan eksport laporan institusi.")
+st.markdown("Ringkasan prestasi akaun harian Gold (XAUUSD), analisis profit factor, drawdown, dan eksport laporan rasmi.")
 st.markdown("---")
 
-# 1. DASHBOARD LANJUTAN (ADVANCED ANALYTICS)
-if menu == "📊 Dashboard Lanjutan":
+# 1. DASHBOARD
+if menu == "📊 Dashboard":
     if df_user.empty:
-        st.info(f"Belum ada rekod untuk **{trader_name}**. Sila isi data di menu **'Isi Rekod & Kalkulator Risiko'**.")
+        st.info(f"Belum ada rekod untuk **{trader_name}**. Sila isi data di menu **'Isi Rekod Harian'**.")
     else:
         modal_awal = df_user["Deposit ($)"].iloc[0] if not df_user.empty else 0.0
         balance_akhir = df_user["Balance ($)"].iloc[-1] if not df_user.empty else 0.0
@@ -122,7 +120,7 @@ if menu == "📊 Dashboard Lanjutan":
         drawdown = df_user["Balance ($)"] - rolling_max
         max_drawdown = drawdown.min() if not drawdown.empty else 0.0
 
-        # Pengiraan Consecutive Wins / Losses (Advanced Analytics)
+        # Pengiraan Consecutive Wins / Losses
         pl_series = (df_user["Profit ($)"] > 0).astype(int) - (df_user["Loss ($)"] > 0).astype(int)
         max_consec_wins, max_consec_losses, current_streak = 0, 0, 0
         for val in pl_series:
@@ -165,27 +163,24 @@ if menu == "📊 Dashboard Lanjutan":
                 chart_data = df_user.set_index("Hari")[["Balance ($)"]]
                 st.line_chart(chart_data, color="#22c55e")
 
-# 2. ISI REKOD & KALKULATOR RISIKO
-elif menu == "📝 Isi Rekod & Kalkulator Risiko":
-    st.subheader(f"Borang Masuk Data & Pengurusan Risiko RRR - [{trader_name}]")
+# 2. ISI REKOD HARIAN
+elif menu == "📝 Isi Rekod Harian":
+    st.subheader(f"Borang Masuk Data Harian - [{trader_name}]")
     
-    with st.form("risk_form"):
+    with st.form("daily_form"):
         col1, col2 = st.columns(2)
         with col1:
             hari = st.number_input("Hari Ke-", min_value=1, max_value=31, value=1)
             tarikh = st.date_input("Tarikh", datetime.date.today())
-            sesi = st.selectbox("Sesi Dagangan Gold", ["London Session", "New York Session", "Asian Session", "Overlap (London/NY)"])
-            rrr = st.selectbox("Risk-to-Reward Ratio (RRR)", ["1:1", "1:1.5", "1:2", "1:2.5", "1:3", "1:4", "1:5+"])
-            risiko_usd = st.number_input("Risiko Akaun ($) / Target Stop Loss", value=10.0, step=5.0, format="%.2f")
-        with col2:
             deposit = st.number_input("Deposit ($)", value=0.00, step=10.0, format="%.2f")
-            profit = st.number_input("Profit ($)", value=0.00, step=10.0, format="%.2f")
-            loss = st.number_input("Loss ($)", value=0.00, step=10.0, format="%.2f")
+            profit = st.number_input("Profit Harian ($)", value=0.00, step=10.0, format="%.2f")
+        with col2:
+            loss = st.number_input("Loss Harian ($)", value=0.00, step=10.0, format="%.2f")
             withdrawal = st.number_input("Withdrawal ($)", value=0.00, step=10.0, format="%.2f")
             balance = st.number_input("Balance Terkini ($)", value=0.00, step=10.0, format="%.2f")
             
-        notes = st.text_area("Notes / Catatan Setup & Analisis Price Action")
-        simpan = st.form_submit_button("Simpan Rekod Dagangan")
+        notes = st.text_area("Notes / Catatan Ringkasan Harian")
+        simpan = st.form_submit_button("Simpan Rekod Harian")
         
         if simpan:
             net_pl = profit - loss
@@ -193,9 +188,6 @@ elif menu == "📝 Isi Rekod & Kalkulator Risiko":
                 "Nama": trader_name,
                 "Hari": hari,
                 "Tarikh": str(tarikh),
-                "Sesi": sesi,
-                "RRR": rrr,
-                "Risiko ($)": risiko_usd,
                 "Deposit ($)": deposit,
                 "Profit ($)": profit,
                 "Loss ($)": loss,
@@ -207,7 +199,7 @@ elif menu == "📝 Isi Rekod & Kalkulator Risiko":
             df_all = pd.concat([df_all, new_row], ignore_index=True)
             df_all = df_all.sort_values(by=["Nama", "Hari"]).reset_index(drop=True)
             save_all_data(df_all)
-            st.success(f"Rekod harian dan RRR untuk **{trader_name}** berjaya disimpan!")
+            st.success(f"Rekod harian untuk **{trader_name}** berjaya disimpan!")
             st.balloons()
 
 # 3. PAPARAN JADUAL & EXPORT PDF EKSKLUSIF
@@ -260,7 +252,7 @@ elif menu == "📋 Paparan Jadual & Export PDF Eksklusif":
             ]))
             elements.append(t_summary)
             elements.append(Spacer(1, 12))
-            elements.append(Paragraph("<b>Log Dagangan Terperinci & Risiko (RRR)</b>", heading_style))
+            elements.append(Paragraph("<b>Log Ringkasan Prestasi Harian</b>", heading_style))
             
             clean_df = dataframe.drop(columns=["Nama"])
             table_data = [list(clean_df.columns)]
