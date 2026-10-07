@@ -84,7 +84,7 @@ menu = st.sidebar.selectbox("Menu Utama", [
 df_user = df_all[df_all["Nama"].str.lower() == trader_name.lower()] if not df_all.empty else pd.DataFrame(columns=df_all.columns)
 
 st.title(f"📊 GOLD TRADING DASHBOARD | {trader_name.upper()}")
-st.markdown("Sistem jurnal harian XAUUSD profesional, semakan screenshot trade history, kalendar ekonomi, dan eksport laporan.")
+st.markdown("Sistem jurnal harian XAUUSD profesional, semakan screenshot trade history, panduan trading, jadual masa sesi/berita, dan eksport laporan.")
 st.markdown("---")
 
 # 1. DASHBOARD
@@ -328,32 +328,34 @@ elif menu == "📋 Paparan Jadual & Export PDF Eksklusif":
 
 # 4. PANDUAN & INFO TRADING
 elif menu == "📚 Panduan & Info Trading":
-    st.subheader("📅 Kalendar Berita Ekonomi (Economic Calendar - USD / XAUUSD)")
-    st.markdown("Rujukan masa spesifik (Waktu Malaysia - MYT), tahap impak, dan data rujukan penting bagi pasaran Gold.")
+    st.subheader("📚 Panduan, Rujukan & Jadual Masa Sesi & Berita (ProfLegacy)")
+    st.markdown("Halaman rujukan masa penting (Waktu Malaysia - MYT) untuk pasaran Gold (XAUUSD).")
     st.markdown("---")
     
-    st.markdown("### 🗓️ Jadual Berita Utama (Contoh Paparan Kalendar Harian)")
+    st.markdown("### 1. 🕒 Jadual Sesi Dagangan Utama (Waktu Malaysia - MYT)")
+    st.info("Waktu penentuan bilakah pasaran aktif terutamanya untuk pergerakan XAUUSD.")
     
-    calendar_df = pd.DataFrame({
-        "Masa (MYT)": ["20:30", "20:30", "20:30", "23:00", "01:40 (+1 Hari)"],
-        "Tahap Impak": ["High (Merah)", "High (Merah)", "High (Merah)", "Med (Oren)", "Med (Oren)"],
-        "Peristiwa / Berita Ekonomi": [
-            "Jobless Claims 4-week Average[cite: 3]", 
-            "Continuing Jobless Claims[cite: 3]", 
-            "Initial Jobless Claims[cite: 3]", 
-            "Atlanta Fed GDPNow[cite: 3]", 
-            "Fed Musalem Speech[cite: 3]"
-        ],
-        "Mata Wang": ["USD[cite: 3]", "USD[cite: 3]", "USD[cite: 3]", "USD[cite: 3]", "USD[cite: 3]"]
+    session_df = pd.DataFrame({
+        "Sesi Pasaran": ["Sesi Asia (Tokyo)", "Sesi Eropah (London)", "Sesi Amerika (New York)", "London / New York Overlap"],
+        "Waktu Malaysia (MYT)": ["08:00 AM - 05:00 PM", "03:00 PM - 12:00 AM", "08:00 PM - 05:00 AM", "08:00 PM - 12:00 AM"],
+        "Kesan / Volatiliti Gold": ["Sederhana (Sideway / Reversal awal)", "Tinggi (Breakout awal harian)", "Sangat Tinggi (Impuls utama pasaran)", "Puncak Volatiliti Ekstrem (Waktu terbaik/berbahaya)"]
     })
+    st.dataframe(session_df, use_container_width=True, hide_index=True)
     
-    st.dataframe(calendar_df, use_container_width=True, hide_index=True)
+    st.markdown("### 2. ⚡ Waktu Lazim Berita High Impact (USD) Keluar")
+    st.warning("Bagi berita-berita utama US, waktu keluaran rasmi dalam Waktu Malaysia kebiasaannya adalah pada jam **8:30 Malam** atau **9:30 Malam** (Musim Sejuk/Panas US), manakala mesyuarat FOMC kebiasaannya pada pukul **2:00 Pagi**.")
+    
+    news_time_df = pd.DataFrame({
+        "Jenis Berita Utama": ["US CPI / Inflation Data", "US Retail Sales", "Non-Farm Payrolls (NFP)", "FOMC Rate Decision", "US GDP Growth Rate"],
+        "Waktu Lazim (MYT)": ["8:30 Malam", "8:30 Malam", "8:30 Malam", "2:00 Pagi (Keesokan Hari)", "8:30 Malam"]
+    })
+    st.dataframe(news_time_df, use_container_width=True, hide_index=True)
     
     st.markdown("---")
-    st.markdown("### 💡 Panduan Tindakan Trader Semasa Berita High Impact:")
+    st.markdown("### 3. 🛡️ Disiplin & Pengurusan Risiko Harian")
     st.success("""
-    * **Elakkan "Open Position" Baru:** Pastikan anda tidak masuk pasaran sekurang-kurangnya 15 minit sebelum masa **20:30** jika ada berita *High* USD[cite: 3].
-    * **Tonton Pergerakan Spread:** Volatiliti tinggi pada jam-jam ini boleh menyebabkan *spread* broker melebar secara mendadak.
+    * **Elakkan Masuk Posisi 15 Minit Sebelum Berita Besar:** Volatiliti boleh mencetuskan 'spike' yang menolak harga melangkaui Stop Loss anda.
+    * **Rehat Selepas Sesi New York:** Tutup platform selepas jam 12 tengah malam untuk mengelakkan keletihan mental.
     """)
 
 # 5. SENARAI PENGGUNA
