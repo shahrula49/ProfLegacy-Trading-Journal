@@ -7,7 +7,7 @@ from io import BytesIO
 
 # --- PENGHASILAN PDF REPORT (REPORTLAB) ---
 from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
@@ -36,19 +36,21 @@ def set_clean_style():
 set_clean_style()
 
 DATA_FILE = "proflegacy_journal_users.csv"
+UPLOAD_DIR = "uploaded_screenshots"
+
+if not os.path.exists(UPLOAD_DIR):
+    os.makedirs(UPLOAD_DIR)
 
 def load_all_data():
     if os.path.exists(DATA_FILE):
         df = pd.read_csv(DATA_FILE)
-        # Buang kolum lama yang tidak diperlukan jika ada dalam fail lama
-        for col in ["RRR", "Risiko ($)", "Sesi"]:
-            if col in df.columns:
-                df = df.drop(columns=[col])
+        if "Screenshot" not in df.columns:
+            df["Screenshot"] = ""
         return df
     else:
         return pd.DataFrame(columns=[
             "Nama", "Hari", "Tarikh", "Deposit ($)", "Profit ($)", "Loss ($)", 
-            "Net P/L ($)", "Withdrawal ($)", "Balance ($)", "Notes"
+            "Net P/L ($)", "Withdrawal ($)", "Balance ($)", "Screenshot", "Notes"
         ])
 
 def save_all_data(df):
@@ -81,7 +83,7 @@ menu = st.sidebar.selectbox("Menu Utama", [
 df_user = df_all[df_all["Nama"].str.lower() == trader_name.lower()] if not df_all.empty else pd.DataFrame(columns=df_all.columns)
 
 st.title(f"📊 GOLD TRADING DASHBOARD | {trader_name.upper()}")
-st.markdown("Ringkasan prestasi akaun harian Gold (XAUUSD), analisis profit factor, drawdown, dan eksport laporan rasmi.")
+st.markdown("Ringkasan prestasi akaun harian Gold (XAUUSD), pengesahan screenshot trade history, dan eksport laporan rasmi.")
 st.markdown("---")
 
 # 1. DASHBOARD
@@ -165,7 +167,7 @@ if menu == "📊 Dashboard":
 
 # 2. ISI REKOD HARIAN
 elif menu == "📝 Isi Rekod Harian":
-    st.subheader(f"Borang Masuk Data Harian - [{trader_name}]")
+    st.subheader(f"Borang Masuk Data Harian & Upload Trade History - [{trader_name}]")
     
     with st.form("daily_form"):
         col1, col2 = st.columns(2)
@@ -179,10 +181,19 @@ elif menu == "📝 Isi Rekod Harian":
             withdrawal = st.number_input("Withdrawal ($)", value=0.00, step=10.0, format="%.2f")
             balance = st.number_input("Balance Terkini ($)", value=0.00, step=10.0, format="%.2f")
             
+        uploaded_file = st.file_uploader("Upload Screenshot Trade History (MT4/MT5/Platform)", type=["png", "jpg", "jpeg"])
         notes = st.text_area("Notes / Catatan Ringkasan Harian")
+        
         simpan = st.form_submit_button("Simpan Rekod Harian")
         
         if simpan:
+            screenshot_path = ""
+            if uploaded_file is not None:
+                file_name = f"{trader_name}_Day_{hari}_{datetime.date.today()}.png".replace(" ", "_")
+                screenshot_path = os.path.join(UPLOAD_DIR, file_name)
+                with open(screenshot_path, "wb") as f:
+                    f.write(uploaded_file.getbuffer())
+            
             net_pl = profit - loss
             new_row = pd.DataFrame([{
                 "Nama": trader_name,
@@ -194,12 +205,13 @@ elif menu == "📝 Isi Rekod Harian":
                 "Net P/L ($)": net_pl,
                 "Withdrawal ($)": withdrawal,
                 "Balance ($)": balance,
+                "Screenshot": screenshot_path,
                 "Notes": notes
             }])
             df_all = pd.concat([df_all, new_row], ignore_index=True)
             df_all = df_all.sort_values(by=["Nama", "Hari"]).reset_index(drop=True)
             save_all_data(df_all)
-            st.success(f"Rekod harian untuk **{trader_name}** berjaya disimpan!")
+            st.success(f"Rekod harian dan bukti screenshot untuk **{trader_name}** berjaya disimpan!")
             st.balloons()
 
 # 3. PAPARAN JADUAL & EXPORT PDF EKSKLUSIF
@@ -208,7 +220,22 @@ elif menu == "📋 Paparan Jadual & Export PDF Eksklusif":
     if df_user.empty:
         st.info("Tiada rekod lagi untuk trader ini.")
     else:
-        st.dataframe(df_user.drop(columns=["Nama"]), use_container_width=True)
+        # Papar jadual tanpa kolum laluan fail screenshot yang panjang
+        display_df = df_user.drop(columns=["Nama"])
+        st.dataframe(display_df, use_container_width=True)
+        
+        # Paparan preview gambar screenshot mengikut hari
+        st.markdown("### 🖼️ Semakan Screenshot Trade History")
+        has_img = False
+        for _, row in df_user.iterrows():
+            img_path = str(row.get("Screenshot", ""))
+            if img_path and os.path.exists(img_path):
+                has_img = True
+                with st.expander(f"Hari Ke-{row['Hari']} ({row['Tarikh']}) - Bukti Trade History"):
+                    st.image(img_path, caption=f"Trade History Hari {row['Hari']} - {trader_name}", use_column_width=True)
+        if not has_img:
+        	st.info("Tiada fail screenshot yang dimuat naik dalam rekod ini.")
+            
         st.markdown("---")
         
         def draw_watermark(canvas, doc):
@@ -254,9 +281,10 @@ elif menu == "📋 Paparan Jadual & Export PDF Eksklusif":
             elements.append(Spacer(1, 12))
             elements.append(Paragraph("<b>Log Ringkasan Prestasi Harian</b>", heading_style))
             
-            clean_df = dataframe.drop(columns=["Nama"])
-            table_data = [list(clean_df.columns)]
-            for _, row in clean_df.iterrows():
+            # Buang kolum Nama dan Screenshot untuk paparan jadual PDF utama
+            pdf_table_df = dataframe.drop(columns=["Nama", "Screenshot"])
+            table_data = [list(pdf_table_df.columns)]
+            for _, row in pdf_table_df.iterrows():
                 table_data.append([str(val) for val in row.values])
                 
             t_data = Table(table_data, repeatRows=1)
@@ -272,13 +300,24 @@ elif menu == "📋 Paparan Jadual & Export PDF Eksklusif":
             ]))
             elements.append(t_data)
             
+            # Lampirkan gambar screenshot di muka surat / bahagian bawah jika ada
+            for _, row in dataframe.iterrows():
+                img_path = str(row.get("Screenshot", ""))
+                if img_path and os.path.exists(img_path):
+                    elements.append(Spacer(1, 15))
+                    elements.append(Paragraph(f"<b>Bukti Trade History - Hari Ke-{row['Hari']} ({row['Tarikh']})</b>", heading_style))
+                    try:
+                        elements.append(RLImage(img_path, width=400, height=220, preserveAspectRatio=True))
+                    except Exception:
+                        pass
+            
             doc.build(elements, onFirstPage=draw_watermark, onLaterPages=draw_watermark)
             buffer.seek(0)
             return buffer
 
         pdf_file = generate_exclusive_pdf(df_user, trader_name)
         st.download_button(
-            label="📄 Muat Turun Report PDF Institusi (Eksklusif)",
+            label="📄 Muat Turun Report PDF Institusi & Bukti Screenshot",
             data=pdf_file,
             file_name=f"ProfLegacy_Exclusive_Report_{trader_name}_{datetime.date.today().strftime('%B_%Y')}.pdf",
             mime="application/pdf"
