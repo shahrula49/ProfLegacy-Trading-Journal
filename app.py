@@ -77,13 +77,14 @@ menu = st.sidebar.selectbox("Menu Utama", [
     "📊 Dashboard", 
     "📝 Isi Rekod Harian", 
     "📋 Paparan Jadual & Export PDF Eksklusif",
+    "📚 Panduan & Info Trading",
     "👥 Senarai Pengguna"
 ])
 
 df_user = df_all[df_all["Nama"].str.lower() == trader_name.lower()] if not df_all.empty else pd.DataFrame(columns=df_all.columns)
 
 st.title(f"📊 GOLD TRADING DASHBOARD | {trader_name.upper()}")
-st.markdown("Ringkasan prestasi akaun harian Gold (XAUUSD), pengesahan screenshot trade history, dan eksport laporan rasmi.")
+st.markdown("Sistem jurnal harian XAUUSD profesional, semakan screenshot trade history, panduan trading, dan eksport laporan rasmi.")
 st.markdown("---")
 
 # 1. DASHBOARD
@@ -220,11 +221,9 @@ elif menu == "📋 Paparan Jadual & Export PDF Eksklusif":
     if df_user.empty:
         st.info("Tiada rekod lagi untuk trader ini.")
     else:
-        # Papar jadual tanpa kolum laluan fail screenshot yang panjang
         display_df = df_user.drop(columns=["Nama"])
-        st.dataframe(display_df, use_container_width=True)
+        st.dataframe(display_df, use_column_width=True)
         
-        # Paparan preview gambar screenshot mengikut hari
         st.markdown("### 🖼️ Semakan Screenshot Trade History")
         has_img = False
         for _, row in df_user.iterrows():
@@ -234,7 +233,7 @@ elif menu == "📋 Paparan Jadual & Export PDF Eksklusif":
                 with st.expander(f"Hari Ke-{row['Hari']} ({row['Tarikh']}) - Bukti Trade History"):
                     st.image(img_path, caption=f"Trade History Hari {row['Hari']} - {trader_name}", use_column_width=True)
         if not has_img:
-        	st.info("Tiada fail screenshot yang dimuat naik dalam rekod ini.")
+            st.info("Tiada fail screenshot yang dimuat naik dalam rekod ini.")
             
         st.markdown("---")
         
@@ -281,7 +280,6 @@ elif menu == "📋 Paparan Jadual & Export PDF Eksklusif":
             elements.append(Spacer(1, 12))
             elements.append(Paragraph("<b>Log Ringkasan Prestasi Harian</b>", heading_style))
             
-            # Buang kolum Nama dan Screenshot untuk paparan jadual PDF utama
             pdf_table_df = dataframe.drop(columns=["Nama", "Screenshot"])
             table_data = [list(pdf_table_df.columns)]
             for _, row in pdf_table_df.iterrows():
@@ -300,7 +298,6 @@ elif menu == "📋 Paparan Jadual & Export PDF Eksklusif":
             ]))
             elements.append(t_data)
             
-            # Lampirkan gambar screenshot di muka surat / bahagian bawah jika ada
             for _, row in dataframe.iterrows():
                 img_path = str(row.get("Screenshot", ""))
                 if img_path and os.path.exists(img_path):
@@ -329,7 +326,29 @@ elif menu == "📋 Paparan Jadual & Export PDF Eksklusif":
             save_all_data(df_all)
             st.rerun()
 
-# 4. SENARAI PENGGUNA
+# 4. PANDUAN & INFO TRADING
+elif menu == "📚 Panduan & Info Trading":
+    st.subheader("📚 Panduan, Rujukan & Peraturan Trading (ProfLegacy)")
+    st.markdown("Halaman rujukan eksklusif untuk memahami struktur pasaran Gold (XAUUSD) serta disiplin pengurusan risiko harian.")
+    st.markdown("---")
+    
+    st.markdown("### 1. 🥇 Karakteristik Pasaran Gold (XAUUSD)")
+    st.info("Gold mempunyai volatiliti yang sangat tinggi. Pergerakan ratusan pips boleh berlaku dalam masa yang singkat terutamanya semasa sesi London dan New York overlap.")
+    
+    st.markdown("### 2. 🛡️ Peraturan Pengurusan Risiko Harian")
+    st.success("""
+    * **Had Risiko Harian:** Jangan rugi melebihi peratusan tertentu (contoh: 2-3%) daripada jumlah akaun dalam sehari.
+    * **Disiplin Rehat (Stop Trading):** Jika anda mengalami kerugian berturut-turut sebanyak 2 atau 3 kali sehari, tutup platform dan berhenti berdagang (*revenge trading* adalah musuh utama akaun).
+    * **Konsistensi Log Harian:** Pastikan data profit/loss harian diisi tepat berdasarkan *screenshot* MetaTrader anda.
+    """)
+    
+    st.markdown("### 3. 🧠 Disiplin Psikologi Trader")
+    st.warning("""
+    * Kawal emosi tamak (*greed*) ketika pasaran membuat breakout besar.
+    * Sentiasa patuhi pelan dagangan (*Trading Plan*) anda sendiri tanpa terikut-ikut emosi orang lain.
+    """)
+
+# 5. SENARAI PENGGUNA
 elif menu == "👥 Senarai Pengguna":
     st.subheader("Senarai Nama Trader Yang Menggunakan Sistem")
     if df_all.empty:
