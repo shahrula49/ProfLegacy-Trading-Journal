@@ -5,22 +5,21 @@ import os
 from PIL import Image
 from io import BytesIO
 
-# --- PENGHASILAN PDF REPORT ---
+# --- PENGHASILAN PDF REPORT (REPORTLAB) ---
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
 st.set_page_config(
-    page_title="ProfLegacy - Gold Trading Journal",
+    page_title="ProfLegacy - Gold Trading Journal & Analytics",
     layout="wide"
 )
 
-# --- CSS MODEN & BERSIH (TANPA BACKGROUND WATERMARK) ---
+# --- CSS MODEN & KEMAS ---
 def set_clean_style():
     css = """
     <style>
-    /* Mobile-friendly card adjustments */
     @media (max-width: 768px) {
         .stMetric {
             background-color: #f8fafc;
@@ -40,11 +39,18 @@ DATA_FILE = "proflegacy_journal_users.csv"
 
 def load_all_data():
     if os.path.exists(DATA_FILE):
-        return pd.read_csv(DATA_FILE)
+        df = pd.read_csv(DATA_FILE)
+        # Pastikan kolum baharu wujud untuk keserasian fail lama
+        required_cols = ["RRR", "Risiko ($)", "Sesi"]
+        for col in required_cols:
+            if col not in df.columns:
+                df[col] = "1:2" if col == "RRR" else (10.0 if col == "Risiko ($)" else "London")
+        return df
     else:
         return pd.DataFrame(columns=[
-            "Nama", "Hari", "Tarikh", "Deposit ($)", "Profit ($)", "Loss ($)", 
-            "Net P/L ($)", "Withdrawal ($)", "Balance ($)", "Notes"
+            "Nama", "Hari", "Tarikh", "Sesi", "RRR", "Risiko ($)", 
+            "Deposit ($)", "Profit ($)", "Loss ($)", "Net P/L ($)", 
+            "Withdrawal ($)", "Balance ($)", "Notes"
         ])
 
 def save_all_data(df):
@@ -68,22 +74,22 @@ if not trader_name:
 
 st.sidebar.markdown("---")
 menu = st.sidebar.selectbox("Menu Utama", [
-    "📊 Dashboard", 
-    "📝 Isi Rekod Harian", 
-    "📋 Paparan Jadual & Export PDF",
+    "📊 Dashboard Lanjutan", 
+    "📝 Isi Rekod & Kalkulator Risiko", 
+    "📋 Paparan Jadual & Export PDF Eksklusif",
     "👥 Senarai Pengguna"
 ])
 
 df_user = df_all[df_all["Nama"].str.lower() == trader_name.lower()] if not df_all.empty else pd.DataFrame(columns=df_all.columns)
 
 st.title(f"📊 GOLD TRADING DASHBOARD | {trader_name.upper()}")
-st.markdown("Ringkasan prestasi akaun harian Gold (XAUUSD), deposit, withdrawal, winrate, drawdown, profit factor & R-expectancy.")
+st.markdown("Sistem jurnal profesional XAUUSD lengkap dengan pengurusan risiko RRR, analitik lanjutan, dan eksport laporan institusi.")
 st.markdown("---")
 
-# 1. DASHBOARD
-if menu == "📊 Dashboard":
+# 1. DASHBOARD LANJUTAN (ADVANCED ANALYTICS)
+if menu == "📊 Dashboard Lanjutan":
     if df_user.empty:
-        st.info(f"Belum ada rekod untuk **{trader_name}**. Sila isi data di menu **'Isi Rekod Harian'**.")
+        st.info(f"Belum ada rekod untuk **{trader_name}**. Sila isi data di menu **'Isi Rekod & Kalkulator Risiko'**.")
     else:
         modal_awal = df_user["Deposit ($)"].iloc[0] if not df_user.empty else 0.0
         balance_akhir = df_user["Balance ($)"].iloc[-1] if not df_user.empty else 0.0
@@ -116,6 +122,17 @@ if menu == "📊 Dashboard":
         drawdown = df_user["Balance ($)"] - rolling_max
         max_drawdown = drawdown.min() if not drawdown.empty else 0.0
 
+        # Pengiraan Consecutive Wins / Losses (Advanced Analytics)
+        pl_series = (df_user["Profit ($)"] > 0).astype(int) - (df_user["Loss ($)"] > 0).astype(int)
+        max_consec_wins, max_consec_losses, current_streak = 0, 0, 0
+        for val in pl_series:
+            if val > 0:
+                current_streak = current_streak + 1 if current_streak > 0 else 1
+                max_consec_wins = max(max_consec_wins, current_streak)
+            elif val < 0:
+                current_streak = current_streak - 1 if current_streak < 0 else -1
+                max_consec_losses = max(max_consec_losses, abs(current_streak))
+
         # Kotak Metrik Atas (Responsif)
         m1, m2, m3, m4 = st.columns(4)
         m1.metric("MODAL AWAL", f"${modal_awal:.2f}")
@@ -127,17 +144,17 @@ if menu == "📊 Dashboard":
         
         col_left, col_right = st.columns([1, 1.4])
         with col_left:
-            st.subheader("RINGKASAN & METRIK UTAMA")
+            st.subheader("RINGKASAN & METRIK INSTITUSI")
             summary_table = pd.DataFrame({
                 "Perkara": [
-                    "Jumlah Deposit ($)", "Jumlah Withdrawal ($)", "Jumlah Profit ($)",
-                    "Jumlah Loss ($)", "Net P/L ($)", "Jumlah Hari Profit",
-                    "Jumlah Hari Loss", "Max Drawdown ($)", "Profit Factor", "R-Expectancy ($)"
+                    "Jumlah Deposit ($)", "Jumlah Withdrawal ($)", "Net P/L Keseluruhan",
+                    "Jumlah Hari Profit / Loss", "Max Drawdown ($)", "Profit Factor",
+                    "R-Expectancy ($)", "Max Consecutive Wins", "Max Consecutive Losses"
                 ],
                 "Nilai": [
-                    f"${total_deposit:.2f}", f"${total_withdrawal:.2f}", f"${total_profit:.2f}",
-                    f"${total_loss:.2f}", f"${total_net_pl:.2f}", str(win_days),
-                    str(loss_days), f"${max_drawdown:.2f}", f"{profit_factor:.2f}", f"${r_expectancy:.2f}"
+                    f"${total_deposit:.2f}", f"${total_withdrawal:.2f}", f"${total_net_pl:.2f}",
+                    f"{win_days}H / {loss_days}H", f"${max_drawdown:.2f}", f"{profit_factor:.2f}",
+                    f"${r_expectancy:.2f}", str(max_consec_wins), str(max_consec_losses)
                 ]
             })
             st.dataframe(summary_table, use_container_width=True, hide_index=True)
@@ -148,24 +165,27 @@ if menu == "📊 Dashboard":
                 chart_data = df_user.set_index("Hari")[["Balance ($)"]]
                 st.line_chart(chart_data, color="#22c55e")
 
-# 2. ISI REKOD HARIAN
-elif menu == "📝 Isi Rekod Harian":
-    st.subheader(f"Borang Masuk Data Harian - [{trader_name}]")
+# 2. ISI REKOD & KALKULATOR RISIKO
+elif menu == "📝 Isi Rekod & Kalkulator Risiko":
+    st.subheader(f"Borang Masuk Data & Pengurusan Risiko RRR - [{trader_name}]")
     
-    with st.form("excel_form"):
+    with st.form("risk_form"):
         col1, col2 = st.columns(2)
         with col1:
             hari = st.number_input("Hari Ke-", min_value=1, max_value=31, value=1)
             tarikh = st.date_input("Tarikh", datetime.date.today())
+            sesi = st.selectbox("Sesi Dagangan Gold", ["London Session", "New York Session", "Asian Session", "Overlap (London/NY)"])
+            rrr = st.selectbox("Risk-to-Reward Ratio (RRR)", ["1:1", "1:1.5", "1:2", "1:2.5", "1:3", "1:4", "1:5+"])
+            risiko_usd = st.number_input("Risiko Akaun ($) / Target Stop Loss", value=10.0, step=5.0, format="%.2f")
+        with col2:
             deposit = st.number_input("Deposit ($)", value=0.00, step=10.0, format="%.2f")
             profit = st.number_input("Profit ($)", value=0.00, step=10.0, format="%.2f")
-        with col2:
             loss = st.number_input("Loss ($)", value=0.00, step=10.0, format="%.2f")
             withdrawal = st.number_input("Withdrawal ($)", value=0.00, step=10.0, format="%.2f")
             balance = st.number_input("Balance Terkini ($)", value=0.00, step=10.0, format="%.2f")
-            notes = st.text_area("Notes / Catatan Harian")
             
-        simpan = st.form_submit_button("Simpan Rekod")
+        notes = st.text_area("Notes / Catatan Setup & Analisis Price Action")
+        simpan = st.form_submit_button("Simpan Rekod Dagangan")
         
         if simpan:
             net_pl = profit - loss
@@ -173,6 +193,9 @@ elif menu == "📝 Isi Rekod Harian":
                 "Nama": trader_name,
                 "Hari": hari,
                 "Tarikh": str(tarikh),
+                "Sesi": sesi,
+                "RRR": rrr,
+                "Risiko ($)": risiko_usd,
                 "Deposit ($)": deposit,
                 "Profit ($)": profit,
                 "Loss ($)": loss,
@@ -184,12 +207,12 @@ elif menu == "📝 Isi Rekod Harian":
             df_all = pd.concat([df_all, new_row], ignore_index=True)
             df_all = df_all.sort_values(by=["Nama", "Hari"]).reset_index(drop=True)
             save_all_data(df_all)
-            st.success(f"Rekod harian untuk **{trader_name}** berjaya disimpan!")
+            st.success(f"Rekod harian dan RRR untuk **{trader_name}** berjaya disimpan!")
             st.balloons()
 
-# 3. PAPARAN JADUAL & EXPORT PDF
-elif menu == "📋 Paparan Jadual & Export PDF":
-    st.subheader(f"Jadual & Laporan PDF - [{trader_name}]")
+# 3. PAPARAN JADUAL & EXPORT PDF EKSKLUSIF
+elif menu == "📋 Paparan Jadual & Export PDF Eksklusif":
+    st.subheader(f"Jadual & Laporan PDF Eksklusif - [{trader_name}]")
     if df_user.empty:
         st.info("Tiada rekod lagi untuk trader ini.")
     else:
@@ -200,21 +223,22 @@ elif menu == "📋 Paparan Jadual & Export PDF":
             canvas.saveState()
             logo_path = "image_15.png"
             if os.path.exists(logo_path):
-                canvas.setFillAlpha(0.08)
-                canvas.drawImage(logo_path, 100, 300, width=400, height=200, preserveAspectRatio=True, mask='auto')
+                canvas.setFillAlpha(0.06)
+                canvas.drawImage(logo_path, 80, 250, width=450, height=250, preserveAspectRatio=True, mask='auto')
             canvas.restoreState()
 
-        def generate_pdf_report(dataframe, name):
+        def generate_exclusive_pdf(dataframe, name):
             buffer = BytesIO()
-            doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+            doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=25, leftMargin=25, topMargin=30, bottomMargin=30)
             elements = []
             styles = getSampleStyleSheet()
-            title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], fontSize=15, textColor=colors.HexColor('#1f2937'), spaceAfter=10, alignment=1)
-            heading_style = ParagraphStyle('HeadingStyle', parent=styles['Heading2'], fontSize=11, textColor=colors.HexColor('#374151'), spaceAfter=8)
             
-            elements.append(Paragraph(f"<b>PROFLEGACY - GOLD TRADING JOURNAL ({name.upper()})</b>", title_style))
-            elements.append(Paragraph(f"Tarikh Laporan: {datetime.date.today().strftime('%d-%m-%Y')}", heading_style))
-            elements.append(Spacer(1, 8))
+            title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], fontSize=16, textColor=colors.HexColor('#111827'), spaceAfter=4, alignment=1)
+            sub_style = ParagraphStyle('SubStyle', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor('#4b5563'), spaceAfter=15, alignment=1)
+            heading_style = ParagraphStyle('HeadingStyle', parent=styles['Heading2'], fontSize=11, textColor=colors.HexColor('#1f2937'), spaceAfter=6)
+            
+            elements.append(Paragraph(f"<b>PROFLEGACY TRADING INSTITUTION</b>", title_style))
+            elements.append(Paragraph(f"Laporan Rasmi Jurnal Gold (XAUUSD) — Trader: <b>{name.upper()}</b> | Tarikh: {datetime.date.today().strftime('%d-%m-%Y')}", sub_style))
             
             t_dep = dataframe["Deposit ($)"].sum()
             t_pro = dataframe["Profit ($)"].sum()
@@ -222,21 +246,21 @@ elif menu == "📋 Paparan Jadual & Export PDF":
             t_net = dataframe["Net P/L ($)"].sum()
             
             summary_data = [
-                ['Total Deposit', f"${t_dep:.2f}"],
-                ['Total Profit', f"${t_pro:.2f}"],
-                ['Total Loss', f"${t_los:.2f}"],
-                ['Net P/L Keseluruhan', f"${t_net:.2f}"]
+                ['Total Deposit', f"${t_dep:.2f}", 'Net P/L Keseluruhan', f"${t_net:.2f}"],
+                ['Total Profit', f"${t_pro:.2f}", 'Total Loss', f"${t_los:.2f}"]
             ]
-            t_summary = Table(summary_data, colWidths=[180, 180])
+            t_summary = Table(summary_data, colWidths=[130, 130, 130, 130])
             t_summary.setStyle(TableStyle([
-                ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f3f4f6')),
-                ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#d1d5db')),
-                ('PADDING', (0,0), (-1,-1), 5),
+                ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f8fafc')),
+                ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
+                ('PADDING', (0,0), (-1,-1), 6),
                 ('FONTNAME', (0,0), (-1,-1), 'Helvetica-Bold'),
+                ('FONTSIZE', (0,0), (-1,-1), 8),
+                ('TEXTCOLOR', (0,0), (-1,-1), colors.HexColor('#1e293b'))
             ]))
             elements.append(t_summary)
-            elements.append(Spacer(1, 15))
-            elements.append(Paragraph("<b>Rekod Harian Trading</b>", heading_style))
+            elements.append(Spacer(1, 12))
+            elements.append(Paragraph("<b>Log Dagangan Terperinci & Risiko (RRR)</b>", heading_style))
             
             clean_df = dataframe.drop(columns=["Nama"])
             table_data = [list(clean_df.columns)]
@@ -245,14 +269,14 @@ elif menu == "📋 Paparan Jadual & Export PDF":
                 
             t_data = Table(table_data, repeatRows=1)
             t_data.setStyle(TableStyle([
-                ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#1e3a8a')),
+                ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#0f172a')),
                 ('TEXTCOLOR', (0,0), (-1,0), colors.white),
                 ('ALIGN', (0,0), (-1,-1), 'CENTER'),
                 ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-                ('FONTSIZE', (0,0), (-1,0), 8),
-                ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#d1d5db')),
-                ('FONTSIZE', (0,1), (-1,-1), 7),
-                ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#f9fafb')])
+                ('FONTSIZE', (0,0), (-1,0), 7),
+                ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
+                ('FONTSIZE', (0,1), (-1,-1), 6),
+                ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#f8fafc')])
             ]))
             elements.append(t_data)
             
@@ -260,11 +284,11 @@ elif menu == "📋 Paparan Jadual & Export PDF":
             buffer.seek(0)
             return buffer
 
-        pdf_file = generate_pdf_report(df_user, trader_name)
+        pdf_file = generate_exclusive_pdf(df_user, trader_name)
         st.download_button(
-            label="📄 Muat Turun Report PDF Bulanan",
+            label="📄 Muat Turun Report PDF Institusi (Eksklusif)",
             data=pdf_file,
-            file_name=f"ProfLegacy_Report_{trader_name}_{datetime.date.today().strftime('%B_%Y')}.pdf",
+            file_name=f"ProfLegacy_Exclusive_Report_{trader_name}_{datetime.date.today().strftime('%B_%Y')}.pdf",
             mime="application/pdf"
         )
         
