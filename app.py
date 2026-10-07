@@ -36,10 +36,24 @@ def set_clean_style():
 set_clean_style()
 
 DATA_FILE = "proflegacy_journal_users.csv"
+NEWS_FILE = "economic_news.csv"
 UPLOAD_DIR = "uploaded_screenshots"
 
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
+
+# Fail CSV rujukan berita harian jika belum wujud
+if not os.path.exists(NEWS_FILE):
+    default_news = pd.DataFrame([
+        {"Tarikh": "2026-10-08", "Masa (MYT)": "02:00", "Tahap Impak": "High", "Peristiwa": "FOMC Minutes", "Mata Wang": "USD"},
+        {"Tarikh": "2026-10-08", "Masa (MYT)": "20:30", "Tahap Impak": "High", "Peristiwa": "Jobless Claims 4-week Average", "Mata Wang": "USD"},
+        {"Tarikh": "2026-10-08", "Masa (MYT)": "20:30", "Tahap Impak": "High", "Peristiwa": "Continuing Jobless Claims", "Mata Wang": "USD"},
+        {"Tarikh": "2026-10-08", "Masa (MYT)": "20:30", "Tahap Impak": "High", "Peristiwa": "Initial Jobless Claims", "Mata Wang": "USD"},
+        {"Tarikh": "2026-10-08", "Masa (MYT)": "23:00", "Tahap Impak": "Med", "Peristiwa": "Atlanta Fed GDPNow", "Mata Wang": "USD"},
+        {"Tarikh": "2026-10-09", "Masa (MYT)": "01:40", "Tahap Impak": "Med", "Peristiwa": "Fed Musalem Speech", "Mata Wang": "USD"},
+        {"Tarikh": "2026-10-09", "Masa (MYT)": "22:00", "Tahap Impak": "High", "Peristiwa": "Michigan Consumer Sentiment", "Mata Wang": "USD"}
+    ])
+    default_news.to_csv(NEWS_FILE, index=False)
 
 def load_all_data():
     if os.path.exists(DATA_FILE):
@@ -75,7 +89,6 @@ if not trader_name:
 st.sidebar.markdown("---")
 st.sidebar.subheader("Menu Navigasi Utama")
 
-# "📚 Panduan & Kalendar Berita" diletakkan di barisan ATAS SEKALI
 menu = st.sidebar.radio("Pilih Menu:", [
     "📚 Panduan & Kalendar Berita",
     "📊 Dashboard", 
@@ -87,54 +100,39 @@ menu = st.sidebar.radio("Pilih Menu:", [
 df_user = df_all[df_all["Nama"].str.lower() == trader_name.lower()] if not df_all.empty else pd.DataFrame(columns=df_all.columns)
 
 st.title(f"📊 GOLD TRADING DASHBOARD | {trader_name.upper()}")
-st.markdown("Sistem jurnal harian XAUUSD profesional, semakan screenshot trade history, kalendar ekonomi dinamik, dan eksport laporan.")
+st.markdown("Sistem jurnal harian XAUUSD profesional, semakan screenshot trade history, kalendar ekonomi, dan eksport laporan.")
 st.markdown("---")
 
-# 1. PANDUAN & KALENDAR BERITA DINAMIK (MENU UTAMA DI ATAS)
+# 1. PANDUAN & KALENDAR BERITA (SUMBER CSV FLEKSIBEL)
 if menu == "📚 Panduan & Kalendar Berita":
-    st.subheader("📚 Panduan, Rujukan & Kalendar Berita Ekonomi Harian (XAUUSD)")
-    st.markdown("Pilih tarikh di bawah untuk melihat jadual rujukan berita ekonomi bagi hari tersebut.")
+    st.subheader("📚 Kalendar Berita Ekonomi Harian (XAUUSD)")
+    st.markdown("Pilih tarikh di bawah untuk memaparkan senarai berita ekonomi rasmi pada hari tersebut.")
     st.markdown("---")
     
-    # Pemilih Tarikh Dinamik untuk Kalendar Berita
-    selected_news_date = st.date_input("Pilih Tarikh Kalendar Berita:", datetime.date.today())
+    # Pemilih Tarikh Dinamik
+    selected_news_date = st.date_input("Pilih Tarikh Kalendar Berita:", datetime.date(2026, 10, 8))
+    date_str = str(selected_news_date)
+    
     st.markdown(f"### 🗓️ Jadual Berita Ekonomi — {selected_news_date.strftime('%A, %d %B %Y')}")
     
-    # Simulasi data jadual mengikut hari yang dipilih
-    day_name = selected_news_date.strftime('%A')
-    
-    if day_name in ["Saturday", "Sunday"]:
-        st.info("☕ Hujung minggu (Weekend) — Pasaran ditutup. Tiada sebarang berita ekonomi atau pergerakan harga aktif.")
-    else:
-        if day_name == "Wednesday":
-            news_data = [
-                {"Masa (MYT)": "20:30", "Tahap Impak": "High (Merah)", "Peristiwa": "US CPI / Inflation Rate", "Mata Wang": "USD"},
-                {"Masa (MYT)": "22:30", "Tahap Impak": "High (Merah)", "Peristiwa": "Crude Oil Inventories", "Mata Wang": "USD"},
-                {"Masa (MYT)": "02:00 (+1 Hari)", "Tahap Impak": "High (Merah)", "Peristiwa": "FOMC Meeting Minutes", "Mata Wang": "USD"}
-            ]
-        elif day_name == "Thursday":
-            news_data = [
-                {"Masa (MYT)": "20:30", "Tahap Impak": "High (Merah)", "Peristiwa": "Initial Jobless Claims", "Mata Wang": "USD"},
-                {"Masa (MYT)": "20:30", "Tahap Impak": "High (Merah)", "Peristiwa": "Core Retail Sales (MoM)", "Mata Wang": "USD"},
-                {"Masa (MYT)": "23:00", "Tahap Impak": "Med (Oren)", "Peristiwa": "Atlanta Fed GDPNow", "Mata Wang": "USD"}
-            ]
-        elif day_name == "Friday":
-            news_data = [
-                {"Masa (MYT)": "20:30", "Tahap Impak": "High (Merah)", "Peristiwa": "Non-Farm Payrolls (NFP)", "Mata Wang": "USD"},
-                {"Masa (MYT)": "20:30", "Tahap Impak": "High (Merah)", "Peristiwa": "Unemployment Rate", "Mata Wang": "USD"}
-            ]
+    # Baca data daripada fail CSV luaran (economic_news.csv)
+    if os.path.exists(NEWS_FILE):
+        news_df = pd.read_csv(NEWS_FILE)
+        # Tapisan mengikut tarikh yang dipilih pengguna
+        filtered_news = news_df[news_df["Tarikh"] == date_str]
+        
+        if not filtered_news.empty:
+            display_news = filtered_news.drop(columns=["Tarikh"])
+            st.dataframe(display_news, use_container_width=True, hide_index=True)
         else:
-            news_data = [
-                {"Masa (MYT)": "21:00", "Tahap Impak": "Med (Oren)", "Peristiwa": "Prelim GDP / Services PMI", "Mata Wang": "USD"},
-                {"Masa (MYT)": "23:00", "Tahap Impak": "Low (Kuning)", "Peristiwa": "CB Consumer Confidence", "Mata Wang": "USD"}
-            ]
-            
-        st.dataframe(pd.DataFrame(news_data), use_container_width=True, hide_index=True)
-    
+            st.info(f"Tiada rekod berita ekonomi rasmi dimasukkan untuk tarikh {date_str} ini.")
+    else:
+        st.warning("Fail pangkalan data berita (`economic_news.csv`) tidak dijumpai.")
+        
     st.markdown("---")
     st.markdown("### 💡 Panduan Tindakan Trader Semasa Berita High Impact:")
     st.success("""
-    * **Elakkan "Open Position" Baru:** Jangan buka posisi sekurang-kurangnya 15 minit sebelum waktu berita berimpak tinggi (*High / Merah*).
+    * **Elakkan "Open Position" Baru:** Jangan buka posisi sekurang-kurangnya 15 minit sebelum waktu berita berimpak tinggi (*High*).
     * **Kawalan Risiko:** Pastikan Stop Loss sentiasa dipasang bagi mengelakkan lonjakan harga (*spike*) yang mendadak.
     """)
 
@@ -174,7 +172,6 @@ elif menu == "📊 Dashboard":
         drawdown = df_user["Balance ($)"] - rolling_max
         max_drawdown = drawdown.min() if not drawdown.empty else 0.0
 
-        # Pengiraan Consecutive Wins / Losses
         pl_series = (df_user["Profit ($)"] > 0).astype(int) - (df_user["Loss ($)"] > 0).astype(int)
         max_consec_wins, max_consec_losses, current_streak = 0, 0, 0
         for val in pl_series:
@@ -185,7 +182,6 @@ elif menu == "📊 Dashboard":
                 current_streak = current_streak - 1 if current_streak < 0 else -1
                 max_consec_losses = max(max_consec_losses, abs(current_streak))
 
-        # Kotak Metrik Atas (Responsif)
         m1, m2, m3, m4 = st.columns(4)
         m1.metric("MODAL AWAL", f"${modal_awal:.2f}")
         m2.metric("BALANCE AKHIR", f"${balance_akhir:.2f}")
