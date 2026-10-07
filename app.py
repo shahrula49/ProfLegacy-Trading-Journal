@@ -4,6 +4,7 @@ import datetime
 import os
 from PIL import Image
 from io import BytesIO
+import plotly.express as px
 
 # --- PENGHASILAN PDF REPORT (REPORTLAB) ---
 from reportlab.lib.pagesizes import A4
@@ -29,6 +30,14 @@ def set_clean_style():
             margin-bottom: 10px;
         }
     }
+    .heatmap-box {
+        padding: 8px;
+        border-radius: 6px;
+        text-align: center;
+        font-weight: bold;
+        color: white;
+        margin: 2px;
+    }
     </style>
     """
     st.markdown(css, unsafe_allow_html=True)
@@ -36,6 +45,7 @@ def set_clean_style():
 set_clean_style()
 
 DATA_FILE = "proflegacy_journal_users.csv"
+PIN_FILE = "proflegacy_user_pins.csv"
 UPLOAD_DIR = "uploaded_screenshots"
 
 if not os.path.exists(UPLOAD_DIR):
@@ -56,7 +66,17 @@ def load_all_data():
 def save_all_data(df):
     df.to_csv(DATA_FILE, index=False)
 
+def load_pins():
+    if os.path.exists(PIN_FILE):
+        return pd.read_csv(PIN_FILE)
+    else:
+        return pd.DataFrame(columns=["Nama", "PIN"])
+
+def save_pins(df_pins):
+    df_pins.to_csv(PIN_FILE, index=False)
+
 df_all = load_all_data()
+df_pins = load_pins()
 
 # --- SIDEBAR: PILIH NAMA TRADER & NAVIGASI ---
 try:
@@ -66,11 +86,33 @@ except FileNotFoundError:
     st.sidebar.title("ProfLegacy")
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("Profil Trader")
+st.sidebar.subheader("Profil & Keselamatan Trader")
 trader_name = st.sidebar.text_input("Masukkan Nama Anda:", value="Trader 1").strip()
 
 if not trader_name:
     trader_name = "Trader 1"
+
+# Sistem PIN Profil (Keselamatan Data)
+existing_pin_row = df_pins[df_pins["Nama"].str.lower() == trader_name.lower()]
+is_pin_protected = not existing_pin_rows_empty = not existing_pin_row.empty
+
+if is_pin_protected:
+    entered_pin = st.sidebar.text_input("Masukkan PIN Keselamatan Anda:", type="password", key="login_pin")
+    stored_pin = str(existing_pin_row["PIN"].values[0])
+    if entered_pin != stored_pin:
+        st.sidebar.error("PIN tidak sah! Sila masukkan PIN betul untuk buka akses profil ini.")
+        st.stop()
+    else:
+        st.sidebar.success("Akses Disahkan 🔒")
+else:
+    set_new_pin = st.sidebar.text_input("Tetapkan PIN Baru (Pilihan):", type="password", key="new_pin")
+    if set_new_pin:
+        if st.sidebar.button("Daftar PIN Profil"):
+            new_pin_df = pd.DataFrame([{"Nama": trader_name, "PIN": set_new_pin}])
+            df_pins = pd.concat([df_pins[df_pins["Nama"].str.lower() != trader_name.lower()], new_pin_df], ignore_index=True)
+            save_pins(df_pins)
+            st.sidebar.success("PIN berjaya didaftarkan!")
+            st.rerun()
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("Menu Navigasi Utama")
@@ -78,14 +120,14 @@ st.sidebar.subheader("Menu Navigasi Utama")
 menu = st.sidebar.radio("Pilih Menu:", [
     "📊 Dashboard", 
     "📝 Isi Rekod Harian", 
-    "📋 Paparan Jadual & Export PDF/Excel",
+    "📋 Paparan Jadual, Heatmap & Export",
     "👥 Senarai Pengguna & Leaderboard"
 ])
 
 df_user = df_all[df_all["Nama"].str.lower() == trader_name.lower()] if not df_all.empty else pd.DataFrame(columns=df_all.columns)
 
 st.title(f"📊 GOLD TRADING DASHBOARD | {trader_name.upper()}")
-st.markdown("Sistem jurnal harian XAUUSD profesional, semakan screenshot trade history, dan eksport laporan.")
+st.markdown("Sistem jurnal harian XAUUSD bertaraf institusi dilengkapi analitik lanjutan, kalendar prestasi, dan kawalan keselamatan.")
 st.markdown("---")
 
 # 1. DASHBOARD
@@ -160,10 +202,12 @@ if menu == "📊 Dashboard":
             st.dataframe(summary_table, use_container_width=True, hide_index=True)
             
         with col_right:
-            st.subheader("Grafik Pertumbuhan Balance Gold")
-            if "Hari" in df_user.columns and "Balance ($)" in df_user.columns:
-                chart_data = df_user.set_index("Hari")[["Balance ($)"]]
-                st.line_chart(chart_data, color="#22c55e")
+            st.subheader("Grafik Interaktif Pertumbuhan Balance Gold (Plotly)")
+            if not df_user.empty and "Tarikh" in df_user.columns:
+                fig = px.line(df_user, x="Tarikh", y="Balance ($)", markers=True, title="Trend Pertumbuhan Akaun Mengikut Tarikh")
+                fig.update_traces(line_color="#22c55e", marker=dict(size=8))
+                fig.update_layout(xaxis_title="Tarikh", yaxis_title="Balance ($)", margin=dict(l=20, r=20, t=40, b=20))
+                st.plotly_chart(fig, use_container_width=True)
 
 # 2. ISI REKOD HARIAN
 elif menu == "📝 Isi Rekod Harian":
@@ -211,18 +255,55 @@ elif menu == "📝 Isi Rekod Harian":
             df_all = pd.concat([df_all, new_row], ignore_index=True)
             df_all = df_all.sort_values(by=["Nama", "Hari"]).reset_index(drop=True)
             save_all_data(df_all)
-            st.success(f"Rekod harian dan bukti screenshot untuk **{trader_name}** berjaya disimpan!")
+            st.toast("✅ Rekod harian berjaya disimpan ke dalam sistem!", icon="🚀")
             st.balloons()
 
-# 3. PAPARAN JADUAL & EXPORT PDF & EXCEL
-elif menu == "📋 Paparan Jadual & Export PDF/Excel":
-    st.subheader(f"Jadual & Eksport Laporan Eksklusif - [{trader_name}]")
+# 3. PAPARAN JADUAL, HEATMAP & EXPORT PDF/EXCEL
+elif menu == "📋 Paparan Jadual, Heatmap & Export":
+    st.subheader(f"Jadual Penapisan Lanjutan, Kalendar Heatmap & Eksport - [{trader_name}]")
     if df_user.empty:
         st.info("Tiada rekod lagi untuk trader ini.")
     else:
-        display_df = df_user.drop(columns=["Nama"])
-        st.dataframe(display_df, use_container_width=True)
+        # Penapisan & Carian Lanjutan
+        st.markdown("### 🔍 Carian & Penapisan Rekod")
+        f_col1, f_col2 = st.columns(2)
+        with f_col1:
+            status_filter = st.selectbox("Tapis Mengikut Prestasi Hari:", ["Semua", "Hari Profit Sahaja", "Hari Loss Sahaja"])
+        with f_col2:
+            search_query = st.text_input("Cari Kata Kunci dalam Nota:").lower()
+            
+        filtered_df = df_user.copy()
+        if status_filter == "Hari Profit Sahaja":
+            filtered_df = filtered_df[filtered_df["Profit ($)"] > 0]
+        elif status_filter == "Hari Loss Sahaja":
+            filtered_df = filtered_df[filtered_df["Loss ($)"] > 0]
+            
+        if search_query:
+            filtered_df = filtered_df[filtered_df["Notes"].str.lower().str.contains(search_query, na=False)]
+            
+        st.dataframe(filtered_df.drop(columns=["Nama"]), use_container_width=True)
         
+        # Kalendar / Heatmap Bulanan Prestasi
+        st.markdown("---")
+        st.markdown("### 🗓️ Kalendar Heatmap Prestasi Harian")
+        st.markdown("Visual pantas hari untung (Hijau) berbanding hari rugi (Merah):")
+        
+        cols_heat = st.columns(7)
+        days_of_week = ["Isnin", "Selasa", "Rabu", "Khamis", "Jumaat", "Sabtu", "Ahad"]
+        for idx, day_name in enumerate(days_of_week):
+            cols_heat[idx].markdown(f"**{day_name}**")
+            
+        # Paparan ringkas grid berdasarkan hari ke- rekod
+        grid_cols = st.columns(7)
+        for _, row in df_user.iterrows():
+            day_num = int(row["Hari"])
+            net_val = row["Net P/L ($)"]
+            col_idx = (day_num - 1) % 7
+            bg_color = "#22c55e" if net_val > 0 else ("#ef4444" if net_val < 0 else "#94a3b8")
+            with grid_cols[col_idx]:
+                st.markdown(f'<div class="heatmap-box" style="background-color: {bg_color};">H{day_num}<br>${net_val:.1f}</div>', unsafe_allow_html=True)
+
+        st.markdown("---")
         st.markdown("### 🖼️ Semakan Screenshot Trade History")
         has_img = False
         for _, row in df_user.iterrows():
@@ -326,7 +407,7 @@ elif menu == "📋 Paparan Jadual & Export PDF/Excel":
         with col_excel:
             output_excel = BytesIO()
             with pd.ExcelWriter(output_excel, engine='openpyxl') as writer:
-                display_df.to_excel(writer, index=False, sheet_name='Jurnal_Trade')
+                df_user.drop(columns=["Nama"]).to_excel(writer, index=False, sheet_name='Jurnal_Trade')
             output_excel.seek(0)
             
             st.download_button(
@@ -340,6 +421,7 @@ elif menu == "📋 Paparan Jadual & Export PDF/Excel":
         if st.button("Padam Rekod Saya"):
             df_all = df_all[df_all["Nama"].str.lower() != trader_name.lower()]
             save_all_data(df_all)
+            st.toast("⚠️ Rekod akaun anda telah dipadam.", icon="🗑️")
             st.rerun()
 
 # 4. SENARAI PENGGUNA & LEADERBOARD PRESTASI
