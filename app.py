@@ -4,7 +4,6 @@ import datetime
 import os
 from PIL import Image
 from io import BytesIO
-import base64
 
 # --- PENGHASILAN PDF REPORT ---
 from reportlab.lib.pagesizes import A4
@@ -17,48 +16,25 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- CSS KHAS UNTUK WATERMARK LATAR BELAKANG & STYLING ---
-def set_background_and_style():
-    logo_path = "image_15.png"
-    encoded_logo = ""
-    if os.path.exists(logo_path):
-        with open(logo_path, "rb") as f:
-            encoded_logo = base64.b64encode(f.read()).decode()
-            
-    css = f"""
+# --- CSS MODEN & BERSIH (TANPA BACKGROUND WATERMARK) ---
+def set_clean_style():
+    css = """
     <style>
-    /* Tetapan Latar Belakang Watermark (Blur/Translucent) & Buang Putih Legap */
-    .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"], .main {{
-        background-color: rgba(255, 255, 255, 0.88) !important;
-        background-image: {'url(data:image/png;base64,' + encoded_logo + ')' if encoded_logo else ''} !important;
-        background-repeat: no-repeat !important;
-        background-position: center !important;
-        background-attachment: fixed !important;
-        background-size: 50% auto !important;
-    }}
-
-    /* Kontena kotak elemen disetkan sedikit telus supaya watermark nampak tembus */
-    [data-testid="stVerticalBlock"] > div {{
-        background-color: rgba(255, 255, 255, 0.82);
-        border-radius: 8px;
-        padding: 5px;
-    }}
-    
     /* Mobile-friendly card adjustments */
-    @media (max-width: 768px) {{
-        .stMetric {{
-            background-color: rgba(248, 250, 252, 0.9);
+    @media (max-width: 768px) {
+        .stMetric {
+            background-color: #f8fafc;
             padding: 10px;
             border-radius: 8px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             margin-bottom: 10px;
-        }}
-    }}
+        }
+    }
     </style>
     """
     st.markdown(css, unsafe_allow_html=True)
 
-set_background_and_style()
+set_clean_style()
 
 DATA_FILE = "proflegacy_journal_users.csv"
 
