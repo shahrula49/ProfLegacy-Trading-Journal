@@ -38,6 +38,13 @@ def set_clean_style():
         color: white;
         margin: 2px;
     }
+    .edu-card {
+        background-color: #f8fafc;
+        border-left: 4px solid #0f172a;
+        padding: 15px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+    }
     </style>
     """
     st.markdown(css, unsafe_allow_html=True)
@@ -47,9 +54,12 @@ set_clean_style()
 DATA_FILE = "proflegacy_journal_users.csv"
 PIN_FILE = "proflegacy_user_pins.csv"
 UPLOAD_DIR = "uploaded_screenshots"
+ARCHIVE_DIR = "archived_journals"
 
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
+if not os.path.exists(ARCHIVE_DIR):
+    os.makedirs(ARCHIVE_DIR)
 
 def load_all_data():
     if os.path.exists(DATA_FILE):
@@ -120,6 +130,7 @@ menu = st.sidebar.radio("Pilih Menu:", [
     "📊 Dashboard", 
     "📝 Isi Rekod Harian", 
     "📋 Paparan Jadual, Heatmap & Export",
+    "📚 Education Hub (Nota XAUUSD)",
     "👥 Senarai Pengguna & Leaderboard"
 ])
 
@@ -312,7 +323,7 @@ elif menu == "📋 Paparan Jadual, Heatmap & Export":
             st.info("Tiada fail screenshot yang dimuat naik dalam rekod ini.")
             
         st.markdown("---")
-        st.markdown("### 📥 Muat Turun Laporan")
+        st.markdown("### 📥 Muat Turun Laporan & Arkib Bulanan")
         
         col_pdf, col_excel = st.columns(2)
         
@@ -414,13 +425,86 @@ elif menu == "📋 Paparan Jadual, Heatmap & Export":
             )
         
         st.markdown("---")
+        st.markdown("### 🗄️ Sistem Arkib & Reset Bulan Baharu")
+        st.write("Simpan rekod bulan ini ke dalam fail arkib peribadi dan kosongkan jadual untuk memulakan bulan baharu.")
+        
+        col_arc1, col_arc2 = st.columns(2)
+        with col_arc1:
+            archive_month_name = st.text_input("Nama Arkib Bulan (Cth: Oktober_2026):", value=f"Bulan_{datetime.date.today().strftime('%B_%Y')}")
+            if st.button("📁 Arkibkan Data Semasa"):
+                archive_path = os.path.join(ARCHIVE_DIR, f"{trader_name}_{archive_month_name}.csv")
+                df_user.to_csv(archive_path, index=False)
+                st.success(f"Data berjaya diarkibkan ke `{archive_path}`!")
+                
+        with col_arc2:
+            st.write("")
+            st.write("")
+            if st.button("🔄 Reset / Mula Lembaran Bulan Baru"):
+                # Padam rekod trader semasa sahaja dari fail utama
+                df_all = df_all[df_all["Nama"].str.lower() != trader_name.lower()]
+                save_all_data(df_all)
+                st.toast("🔄 Jurnal telah direset untuk lembaran bulan baharu!", icon="✨")
+                st.rerun()
+
+        st.markdown("---")
         if st.button("Padam Rekod Saya"):
             df_all = df_all[df_all["Nama"].str.lower() != trader_name.lower()]
             save_all_data(df_all)
             st.toast("⚠️ Rekod akaun anda telah dipadam.", icon="🗑️")
             st.rerun()
 
-# 4. SENARAI PENGGUNA & LEADERBOARD PRESTASI
+# 4. EDUCATION HUB (NOTA TEKNIKAL XAUUSD)
+elif menu == "📚 Education Hub (Nota XAUUSD)":
+    st.subheader("📚 ProfLegacy Education Hub — Rujukan Teknikal & Market Structure")
+    st.markdown("Nota rujukan eksklusif berasaskan konsep institusi untuk perdagangan instrumen emas (XAUUSD).")
+    st.markdown("---")
+
+    # 1. Market Structure Shift (MSS)
+    st.markdown("""
+    <div class="edu-card">
+        <h3>1. Market Structure Shift (MSS)</h3>
+        <p><b>Definisi:</b> Perubahan struktur pasaran secara drastik yang menunjukkan pertukaran trend (daripada Bullish kepada Bearish atau sebaliknya). MSS berlaku apabila harga berjaya memecahkan paras <i>Swing High</i> atau <i>Swing Low</i> terdekat.</p>
+        <p><b>Cara Guna pada XAUUSD:</b> Emas sangat gemar membuat manipulasi palsu (fake breakout). Tunggu pengesahan candle penutup (close candle) melepasi zon struktur sebelum masuk posisi.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # 2. Order Block (OB)
+    st.markdown("""
+    <div class="edu-card">
+        <h3>2. Order Block (OB)</h3>
+        <p><b>Definisi:</b> Candle terakhir sebelum pergerakan impulsif (impulsive move) yang mencetuskan perubahan struktur (MSS). Zon ini mewakili kawasan institusi besar menyerap pesanan belian atau jualan.</p>
+        <p><b>Cara Guna pada XAUUSD:</b> Kenal pasti OB pada timeframe tinggi (H1 / H4) dan tunggu harga membuat 'retracement' kembali ke zon OB tersebut untuk entry bernisbah tinggi.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # 3. Liquidity Sweep
+    st.markdown("""
+    <div class="edu-card">
+        <h3>3. Liquidity Sweep (Pengambilan Likuiditi)</h3>
+        <p><b>Definisi:</b> Keadaan di mana harga melonjak menembusi paras tinggi atau rendah sebelumnya (tempat retail letak Stop Loss) untuk mencetuskan 'stop hunt' sebelum harga membuat balikan arah yang kuat.</p>
+        <p><b>Cara Guna pada XAUUSD:</b> Jangan kejar harga (chase price) apabila paras sokongan/rintangan utama dibocorkan secara agresif; perhatikan sama ada ia sekadar <i>Sweep</i> sebelum entry lawan arah.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # 4. Quasimodo (QM)
+    st.markdown("""
+    <div class="edu-card">
+        <h3>4. Quasimodo (QM)</h3>
+        <p><b>Definisi:</b> Corak pembalikan trend lanjutan yang terbentuk apabila harga membuat Higher High (HH) atau Lower Low (LL) baru yang melanggar puncak struktur sebelumnya, membentuk aras bahu kiri (Left Shoulder) dan kepala (Head).</p>
+        <p><b>Cara Guna pada XAUUSD:</b> Fokus pada aras 'Left Shoulder' sebagai zon tindak balas utama (Entry Level) apabila harga melengkapkan aras bahu kanan (Right Shoulder).</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # 5. Fibo Musang
+    st.markdown("""
+    <div class="edu-card">
+        <h3>5. Fibo Musang</h3>
+        <p><b>Definisi:</b> Teknik pengukuran menggunakan Fibonacci Retracement khusus untuk mengukur zon unjuran harga berdasarkan impuls awal (Breakout Candle) dan retracement paras 100 & 161.8.</p>
+        <p><b>Cara Guna pada XAUUSD:</b> Digunakan untuk menetapkan sasaran <i>Take Profit</i> (TP) yang bersistem berdasarkan unjuran gelombang pasaran emas.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+# 5. SENARAI PENGGUNA & LEADERBOARD PRESTASI
 elif menu == "👥 Senarai Pengguna & Leaderboard":
     st.subheader("👥 Senarai Nama Trader & Leaderboard Prestasi")
     st.markdown(f"*(Nota: Nilai Net P/L ringgit hanya dipaparkan untuk nama pemilik sesi semasa iaitu **{trader_name}**)*")
