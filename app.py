@@ -16,40 +16,16 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- CSS MODEN & TEMA GELAP (DARK MODE) INSTITUSI ---
-def set_institutional_dark_style():
+# --- CSS MODEN & JELAS ---
+def set_clean_style():
     css = """
     <style>
-    /* Tema Gelap Pekat & Aksen Emas Eksklusif */
-    .stApp {
-        background-color: #0b0f19;
-        color: #f3f4f6;
-    }
-    sidebar .stSidebar {
-        background-color: #111827;
-    }
-    .stMetric {
-        background-color: #111827;
-        padding: 15px;
-        border-radius: 10px;
-        border: 1px solid #1f2937;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
-    }
-    .stMetric label {
-        color: #9ca3af !important;
-    }
-    .stMetric [data-testid="stMetricValue"] {
-        color: #d4af37 !important; /* Warna Emas */
-    }
-    h1, h2, h3 {
-        color: #f9fafb !important;
-    }
-    .stDataFrame {
-        border-radius: 8px;
-        border: 1px solid #1f2937;
-    }
     @media (max-width: 768px) {
         .stMetric {
+            background-color: #f8fafc;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             margin-bottom: 10px;
         }
     }
@@ -57,7 +33,7 @@ def set_institutional_dark_style():
     """
     st.markdown(css, unsafe_allow_html=True)
 
-set_institutional_dark_style()
+set_clean_style()
 
 DATA_FILE = "proflegacy_journal_users.csv"
 UPLOAD_DIR = "uploaded_screenshots"
@@ -109,7 +85,7 @@ menu = st.sidebar.radio("Pilih Menu:", [
 df_user = df_all[df_all["Nama"].str.lower() == trader_name.lower()] if not df_all.empty else pd.DataFrame(columns=df_all.columns)
 
 st.title(f"📊 GOLD TRADING DASHBOARD | {trader_name.upper()}")
-st.markdown("Sistem jurnal harian XAUUSD profesional bertaraf institusi dengan analisis terperinci.")
+st.markdown("Sistem jurnal harian XAUUSD profesional, semakan screenshot trade history, dan eksport laporan.")
 st.markdown("---")
 
 # 1. DASHBOARD
@@ -187,7 +163,7 @@ if menu == "📊 Dashboard":
             st.subheader("Grafik Pertumbuhan Balance Gold")
             if "Hari" in df_user.columns and "Balance ($)" in df_user.columns:
                 chart_data = df_user.set_index("Hari")[["Balance ($)"]]
-                st.line_chart(chart_data, color="#d4af37")
+                st.line_chart(chart_data, color="#22c55e")
 
 # 2. ISI REKOD HARIAN
 elif menu == "📝 Isi Rekod Harian":
@@ -348,7 +324,6 @@ elif menu == "📋 Paparan Jadual & Export PDF/Excel":
             )
             
         with col_excel:
-            # Eksport ke Excel (.xlsx)
             output_excel = BytesIO()
             with pd.ExcelWriter(output_excel, engine='openpyxl') as writer:
                 display_df.to_excel(writer, index=False, sheet_name='Jurnal_Trade')
