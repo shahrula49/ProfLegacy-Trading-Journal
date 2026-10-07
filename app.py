@@ -84,7 +84,7 @@ menu = st.sidebar.selectbox("Menu Utama", [
 df_user = df_all[df_all["Nama"].str.lower() == trader_name.lower()] if not df_all.empty else pd.DataFrame(columns=df_all.columns)
 
 st.title(f"📊 GOLD TRADING DASHBOARD | {trader_name.upper()}")
-st.markdown("Sistem jurnal harian XAUUSD profesional, semakan screenshot trade history, panduan trading, jadual high impact, dan eksport laporan rasmi.")
+st.markdown("Sistem jurnal harian XAUUSD profesional, semakan screenshot trade history, panduan trading, jadual masa sesi/berita, dan eksport laporan.")
 st.markdown("---")
 
 # 1. DASHBOARD
@@ -328,49 +328,34 @@ elif menu == "📋 Paparan Jadual & Export PDF Eksklusif":
 
 # 4. PANDUAN & INFO TRADING
 elif menu == "📚 Panduan & Info Trading":
-    st.subheader("📚 Panduan, Rujukan & Jadual High Impact (ProfLegacy)")
-    st.markdown("Halaman rujukan eksklusif untuk memahami struktur pasaran Gold (XAUUSD) serta jadual rujukan berita ekonomi utama.")
+    st.subheader("📚 Panduan, Rujukan & Jadual Masa Sesi & Berita (ProfLegacy)")
+    st.markdown("Halaman rujukan masa penting (Waktu Malaysia - MYT) untuk pasaran Gold (XAUUSD).")
     st.markdown("---")
     
-    st.markdown("### 1. ⚡ Jadual Rujukan Berita High Impact (USD / Gold Catalyst)")
-    st.info("Berita-berita berikut mencetuskan pergerakan volatiliti tinggi pada pasangan mata wang USD dan XAUUSD. Elakkan dari membuka posisi besar tanpa kawalan risiko ketat semasa waktu ini.")
+    st.markdown("### 1. 🕒 Jadual Sesi Dagangan Utama (Waktu Malaysia - MYT)")
+    st.info("Waktu penentuan bilakah pasaran aktif terutamanya untuk pergerakan XAUUSD.")
     
-    news_df = pd.DataFrame({
-        "Jenis Berita Utama": [
-            "Non-Farm Payrolls (NFP)", 
-            "US Consumer Price Index (CPI)", 
-            "FOMC Rate Decision / Statement", 
-            "US Gross Domestic Product (GDP)", 
-            "Retail Sales (USD)"
-        ],
-        "Kekerapan / Masa Rujukan": [
-            "Jumaat pertama setiap bulan", 
-            "Pertengahan bulan (Bulanan)", 
-            "8 kali setahun (Waktu malam US)", 
-            "Suku tahunan (Quarterly)", 
-            "Pertengahan bulan (Bulanan)"
-        ],
-        "Kesan Terhadap Gold (XAUUSD)": [
-            "Sangat Tinggi (Volatiliti Ekstrem)", 
-            "Sangat Tinggi (Kesan langsung pada USD)", 
-            "Sangat Tinggi (Trend reversal / breakout besar)", 
-            "Sederhana / Tinggi", 
-            "Sederhana"
-        ]
+    session_df = pd.DataFrame({
+        "Sesi Pasaran": ["Sesi Asia (Tokyo)", "Sesi Eropah (London)", "Sesi Amerika (New York)", "London / New York Overlap"],
+        "Waktu Malaysia (MYT)": ["08:00 AM - 05:00 PM", "03:00 PM - 12:00 AM", "08:00 PM - 05:00 AM", "08:00 PM - 12:00 AM"],
+        "Kesan / Volatiliti Gold": ["Sederhana (Sideway / Reversal awal)", "Tinggi (Breakout awal harian)", "Sangat Tinggi (Impuls utama pasaran)", "Puncak Volatiliti Ekstrem (Waktu terbaik/berbahaya)"]
     })
-    st.dataframe(news_df, use_container_width=True, hide_index=True)
+    st.dataframe(session_df, use_container_width=True, hide_index=True)
+    
+    st.markdown("### 2. ⚡ Waktu Lazim Berita High Impact (USD) Keluar")
+    st.warning("Bagi berita-berita utama US, waktu keluaran rasmi dalam Waktu Malaysia kebiasaannya adalah pada jam **8:30 Malam** atau **9:30 Malam** (Musim Sejuk/Panas US), manakala mesyuarat FOMC kebiasaannya pada pukul **2:00 Pagi**.")
+    
+    news_time_df = pd.DataFrame({
+        "Jenis Berita Utama": ["US CPI / Inflation Data", "US Retail Sales", "Non-Farm Payrolls (NFP)", "FOMC Rate Decision", "US GDP Growth Rate"],
+        "Waktu Lazim (MYT)": ["8:30 Malam", "8:30 Malam", "8:30 Malam", "2:00 Pagi (Keesokan Hari)", "8:30 Malam"]
+    })
+    st.dataframe(news_time_df, use_container_width=True, hide_index=True)
     
     st.markdown("---")
-    st.markdown("### 2. 🛡️ Peraturan Pengurusan Risiko Harian")
+    st.markdown("### 3. 🛡️ Disiplin & Pengurusan Risiko Harian")
     st.success("""
-    * **Had Risiko Harian:** Jangan rugi melebihi 2% hingga 3% daripada jumlah akaun dalam sehari.
-    * **Disiplin Rehat:** Jika mengalami kerugian berturut-turut, tutup platform dan rehat (*revenge trading* adalah punca utama akaun terbakar).
-    """)
-    
-    st.markdown("### 3. 🧠 Disiplin Psikologi Trader")
-    st.warning("""
-    * Kawal emosi tamak ketika pasaran membuat lonjakan besar (*breakout*).
-    * Sentiasa patuhi pelan dagangan harian dan semak *screenshot* akaun anda untuk ketelusan data.
+    * **Elakkan Masuk Posisi 15 Minit Sebelum Berita Besar:** Volatiliti boleh mencetuskan 'spike' yang menolak harga melangkaui Stop Loss anda.
+    * **Rehat Selepas Sesi New York:** Tutup platform selepas jam 12 tengah malam untuk mengelakkan keletihan mental.
     """)
 
 # 5. SENARAI PENGGUNA
