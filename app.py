@@ -440,7 +440,6 @@ elif menu == "📋 Paparan Jadual, Heatmap & Export":
             st.write("")
             st.write("")
             if st.button("🔄 Reset / Mula Lembaran Bulan Baru"):
-                # Padam rekod trader semasa sahaja dari fail utama
                 df_all = df_all[df_all["Nama"].str.lower() != trader_name.lower()]
                 save_all_data(df_all)
                 st.toast("🔄 Jurnal telah direset untuk lembaran bulan baharu!", icon="✨")
@@ -453,10 +452,10 @@ elif menu == "📋 Paparan Jadual, Heatmap & Export":
             st.toast("⚠️ Rekod akaun anda telah dipadam.", icon="🗑️")
             st.rerun()
 
-# 4. EDUCATION HUB (NOTA TEKNIKAL XAUUSD)
+# 4. EDUCATION HUB (NOTA TEKNIKAL XAUUSD BERTAJUK & RUJUKAN VISUAL)
 elif menu == "📚 Education Hub (Nota XAUUSD)":
-    st.subheader("📚 ProfLegacy Education Hub — Rujukan Teknikal & Market Structure")
-    st.markdown("Nota rujukan eksklusif berasaskan konsep institusi untuk perdagangan instrumen emas (XAUUSD).")
+    st.subheader("📚 ProfLegacy Education Hub — Rujukan Teknikal & Analisis Visual XAUUSD")
+    st.markdown("Nota penerangan lengkap disertakan bersama panduan visual rajah struktur pasaran untuk rujukan trader.")
     st.markdown("---")
 
     # 1. Market Structure Shift (MSS)
@@ -464,45 +463,53 @@ elif menu == "📚 Education Hub (Nota XAUUSD)":
     <div class="edu-card">
         <h3>1. Market Structure Shift (MSS)</h3>
         <p><b>Definisi:</b> Perubahan struktur pasaran secara drastik yang menunjukkan pertukaran trend (daripada Bullish kepada Bearish atau sebaliknya). MSS berlaku apabila harga berjaya memecahkan paras <i>Swing High</i> atau <i>Swing Low</i> terdekat.</p>
-        <p><b>Cara Guna pada XAUUSD:</b> Emas sangat gemar membuat manipulasi palsu (fake breakout). Tunggu pengesahan candle penutup (close candle) melepasi zon struktur sebelum masuk posisi.</p>
+        <p><b>Panduan Visual Rajah Setup:</b></p>
     </div>
     """, unsafe_allow_html=True)
+    if os.path.exists("image_15.png"):
+        st.image("image_15.png", caption="Contoh Rajah: Market Structure Shift (MSS) pada Chart Gold", use_column_width=True)
+    else:
+        st.info("💡 *Tip Visual: Bayangkan pergerakan harga membuat Higher High, kemudian tiba-tiba melanggar (break) paras Low terdekat secara impulsif.*")
 
     # 2. Order Block (OB)
     st.markdown("""
     <div class="edu-card">
         <h3>2. Order Block (OB)</h3>
         <p><b>Definisi:</b> Candle terakhir sebelum pergerakan impulsif (impulsive move) yang mencetuskan perubahan struktur (MSS). Zon ini mewakili kawasan institusi besar menyerap pesanan belian atau jualan.</p>
-        <p><b>Cara Guna pada XAUUSD:</b> Kenal pasti OB pada timeframe tinggi (H1 / H4) dan tunggu harga membuat 'retracement' kembali ke zon OB tersebut untuk entry bernisbah tinggi.</p>
+        <p><b>Panduan Visual Rajah Setup:</b></p>
     </div>
     """, unsafe_allow_html=True)
+    st.info("💡 *Tip Visual: Cari candle bearish terakhir sebelum kemunculan siri candle bullish yang panjang memecahkan rintangan.*")
 
     # 3. Liquidity Sweep
     st.markdown("""
     <div class="edu-card">
         <h3>3. Liquidity Sweep (Pengambilan Likuiditi)</h3>
         <p><b>Definisi:</b> Keadaan di mana harga melonjak menembusi paras tinggi atau rendah sebelumnya (tempat retail letak Stop Loss) untuk mencetuskan 'stop hunt' sebelum harga membuat balikan arah yang kuat.</p>
-        <p><b>Cara Guna pada XAUUSD:</b> Jangan kejar harga (chase price) apabila paras sokongan/rintangan utama dibocorkan secara agresif; perhatikan sama ada ia sekadar <i>Sweep</i> sebelum entry lawan arah.</p>
+        <p><b>Panduan Visual Rajah Setup:</b></p>
     </div>
     """, unsafe_allow_html=True)
+    st.info("💡 *Tip Visual: Sumbu candle (wick) mencucuk melepasi garisan support/resistance lama, namun candle ditutup kembali ke dalam julat harga asal.*")
 
     # 4. Quasimodo (QM)
     st.markdown("""
     <div class="edu-card">
         <h3>4. Quasimodo (QM)</h3>
         <p><b>Definisi:</b> Corak pembalikan trend lanjutan yang terbentuk apabila harga membuat Higher High (HH) atau Lower Low (LL) baru yang melanggar puncak struktur sebelumnya, membentuk aras bahu kiri (Left Shoulder) dan kepala (Head).</p>
-        <p><b>Cara Guna pada XAUUSD:</b> Fokus pada aras 'Left Shoulder' sebagai zon tindak balas utama (Entry Level) apabila harga melengkapkan aras bahu kanan (Right Shoulder).</p>
+        <p><b>Panduan Visual Rajah Setup:</b></p>
     </div>
     """, unsafe_allow_html=True)
+    st.info("💡 *Tip Visual: Pembentukan paras Bahu Kiri - Kepala (Puncak Tertinggi) - Bahu Kanan yang selari dengan paras bahu kiri untuk entry sell/buy.*")
 
     # 5. Fibo Musang
     st.markdown("""
     <div class="edu-card">
         <h3>5. Fibo Musang</h3>
         <p><b>Definisi:</b> Teknik pengukuran menggunakan Fibonacci Retracement khusus untuk mengukur zon unjuran harga berdasarkan impuls awal (Breakout Candle) dan retracement paras 100 & 161.8.</p>
-        <p><b>Cara Guna pada XAUUSD:</b> Digunakan untuk menetapkan sasaran <i>Take Profit</i> (TP) yang bersistem berdasarkan unjuran gelombang pasaran emas.</p>
+        <p><b>Panduan Visual Rajah Setup:</b></p>
     </div>
     """, unsafe_allow_html=True)
+    st.info("💡 *Tip Visual: Tarik Fibonacci dari permulaan tapak breakout ke penghujung candle impuls untuk melihat unjuran TP di paras 161.8.*")
 
 # 5. SENARAI PENGGUNA & LEADERBOARD PRESTASI
 elif menu == "👥 Senarai Pengguna & Leaderboard":
