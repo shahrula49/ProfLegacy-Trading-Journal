@@ -84,7 +84,7 @@ menu = st.sidebar.selectbox("Menu Utama", [
 df_user = df_all[df_all["Nama"].str.lower() == trader_name.lower()] if not df_all.empty else pd.DataFrame(columns=df_all.columns)
 
 st.title(f"📊 GOLD TRADING DASHBOARD | {trader_name.upper()}")
-st.markdown("Sistem jurnal harian XAUUSD profesional, semakan screenshot trade history, panduan trading, dan eksport laporan rasmi.")
+st.markdown("Sistem jurnal harian XAUUSD profesional, semakan screenshot trade history, panduan trading, jadual high impact, dan eksport laporan rasmi.")
 st.markdown("---")
 
 # 1. DASHBOARD
@@ -328,24 +328,49 @@ elif menu == "📋 Paparan Jadual & Export PDF Eksklusif":
 
 # 4. PANDUAN & INFO TRADING
 elif menu == "📚 Panduan & Info Trading":
-    st.subheader("📚 Panduan, Rujukan & Peraturan Trading (ProfLegacy)")
-    st.markdown("Halaman rujukan eksklusif untuk memahami struktur pasaran Gold (XAUUSD) serta disiplin pengurusan risiko harian.")
+    st.subheader("📚 Panduan, Rujukan & Jadual High Impact (ProfLegacy)")
+    st.markdown("Halaman rujukan eksklusif untuk memahami struktur pasaran Gold (XAUUSD) serta jadual rujukan berita ekonomi utama.")
     st.markdown("---")
     
-    st.markdown("### 1. 🥇 Karakteristik Pasaran Gold (XAUUSD)")
-    st.info("Gold mempunyai volatiliti yang sangat tinggi. Pergerakan ratusan pips boleh berlaku dalam masa yang singkat terutamanya semasa sesi London dan New York overlap.")
+    st.markdown("### 1. ⚡ Jadual Rujukan Berita High Impact (USD / Gold Catalyst)")
+    st.info("Berita-berita berikut mencetuskan pergerakan volatiliti tinggi pada pasangan mata wang USD dan XAUUSD. Elakkan dari membuka posisi besar tanpa kawalan risiko ketat semasa waktu ini.")
     
+    news_df = pd.DataFrame({
+        "Jenis Berita Utama": [
+            "Non-Farm Payrolls (NFP)", 
+            "US Consumer Price Index (CPI)", 
+            "FOMC Rate Decision / Statement", 
+            "US Gross Domestic Product (GDP)", 
+            "Retail Sales (USD)"
+        ],
+        "Kekerapan / Masa Rujukan": [
+            "Jumaat pertama setiap bulan", 
+            "Pertengahan bulan (Bulanan)", 
+            "8 kali setahun (Waktu malam US)", 
+            "Suku tahunan (Quarterly)", 
+            "Pertengahan bulan (Bulanan)"
+        ],
+        "Kesan Terhadap Gold (XAUUSD)": [
+            "Sangat Tinggi (Volatiliti Ekstrem)", 
+            "Sangat Tinggi (Kesan langsung pada USD)", 
+            "Sangat Tinggi (Trend reversal / breakout besar)", 
+            "Sederhana / Tinggi", 
+            "Sederhana"
+        ]
+    })
+    st.dataframe(news_df, use_container_width=True, hide_index=True)
+    
+    st.markdown("---")
     st.markdown("### 2. 🛡️ Peraturan Pengurusan Risiko Harian")
     st.success("""
-    * **Had Risiko Harian:** Jangan rugi melebihi peratusan tertentu (contoh: 2-3%) daripada jumlah akaun dalam sehari.
-    * **Disiplin Rehat (Stop Trading):** Jika anda mengalami kerugian berturut-turut sebanyak 2 atau 3 kali sehari, tutup platform dan berhenti berdagang (*revenge trading* adalah musuh utama akaun).
-    * **Konsistensi Log Harian:** Pastikan data profit/loss harian diisi tepat berdasarkan *screenshot* MetaTrader anda.
+    * **Had Risiko Harian:** Jangan rugi melebihi 2% hingga 3% daripada jumlah akaun dalam sehari.
+    * **Disiplin Rehat:** Jika mengalami kerugian berturut-turut, tutup platform dan rehat (*revenge trading* adalah punca utama akaun terbakar).
     """)
     
     st.markdown("### 3. 🧠 Disiplin Psikologi Trader")
     st.warning("""
-    * Kawal emosi tamak (*greed*) ketika pasaran membuat breakout besar.
-    * Sentiasa patuhi pelan dagangan (*Trading Plan*) anda sendiri tanpa terikut-ikut emosi orang lain.
+    * Kawal emosi tamak ketika pasaran membuat lonjakan besar (*breakout*).
+    * Sentiasa patuhi pelan dagangan harian dan semak *screenshot* akaun anda untuk ketelusan data.
     """)
 
 # 5. SENARAI PENGGUNA
