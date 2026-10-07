@@ -92,9 +92,8 @@ trader_name = st.sidebar.text_input("Masukkan Nama Anda:", value="Trader 1").str
 if not trader_name:
     trader_name = "Trader 1"
 
-# Sistem PIN Profil (Keselamatan Data)
 existing_pin_row = df_pins[df_pins["Nama"].str.lower() == trader_name.lower()]
-is_pin_protected = not existing_pin_rows_empty = not existing_pin_row.empty
+is_pin_protected = not existing_pin_row.empty
 
 if is_pin_protected:
     entered_pin = st.sidebar.text_input("Masukkan PIN Keselamatan Anda:", type="password", key="login_pin")
@@ -264,7 +263,6 @@ elif menu == "📋 Paparan Jadual, Heatmap & Export":
     if df_user.empty:
         st.info("Tiada rekod lagi untuk trader ini.")
     else:
-        # Penapisan & Carian Lanjutan
         st.markdown("### 🔍 Carian & Penapisan Rekod")
         f_col1, f_col2 = st.columns(2)
         with f_col1:
@@ -283,7 +281,6 @@ elif menu == "📋 Paparan Jadual, Heatmap & Export":
             
         st.dataframe(filtered_df.drop(columns=["Nama"]), use_container_width=True)
         
-        # Kalendar / Heatmap Bulanan Prestasi
         st.markdown("---")
         st.markdown("### 🗓️ Kalendar Heatmap Prestasi Harian")
         st.markdown("Visual pantas hari untung (Hijau) berbanding hari rugi (Merah):")
@@ -293,7 +290,6 @@ elif menu == "📋 Paparan Jadual, Heatmap & Export":
         for idx, day_name in enumerate(days_of_week):
             cols_heat[idx].markdown(f"**{day_name}**")
             
-        # Paparan ringkas grid berdasarkan hari ke- rekod
         grid_cols = st.columns(7)
         for _, row in df_user.iterrows():
             day_num = int(row["Hari"])
