@@ -16,16 +16,40 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- CSS MODEN & KEMAS ---
-def set_clean_style():
+# --- CSS MODEN & TEMA GELAP (DARK MODE) INSTITUSI ---
+def set_institutional_dark_style():
     css = """
     <style>
+    /* Tema Gelap Pekat & Aksen Emas Eksklusif */
+    .stApp {
+        background-color: #0b0f19;
+        color: #f3f4f6;
+    }
+    sidebar .stSidebar {
+        background-color: #111827;
+    }
+    .stMetric {
+        background-color: #111827;
+        padding: 15px;
+        border-radius: 10px;
+        border: 1px solid #1f2937;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    }
+    .stMetric label {
+        color: #9ca3af !important;
+    }
+    .stMetric [data-testid="stMetricValue"] {
+        color: #d4af37 !important; /* Warna Emas */
+    }
+    h1, h2, h3 {
+        color: #f9fafb !important;
+    }
+    .stDataFrame {
+        border-radius: 8px;
+        border: 1px solid #1f2937;
+    }
     @media (max-width: 768px) {
         .stMetric {
-            background-color: #f8fafc;
-            padding: 10px;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             margin-bottom: 10px;
         }
     }
@@ -33,7 +57,7 @@ def set_clean_style():
     """
     st.markdown(css, unsafe_allow_html=True)
 
-set_clean_style()
+set_institutional_dark_style()
 
 DATA_FILE = "proflegacy_journal_users.csv"
 UPLOAD_DIR = "uploaded_screenshots"
@@ -58,7 +82,7 @@ def save_all_data(df):
 
 df_all = load_all_data()
 
-# --- SIDEBAR: PILIH NAMA TRADER & NAVIGASI TERUS ---
+# --- SIDEBAR: PILIH NAMA TRADER & NAVIGASI ---
 try:
     logo_img = Image.open("image_15.png")
     st.sidebar.image(logo_img, width=220)
@@ -78,14 +102,14 @@ st.sidebar.subheader("Menu Navigasi Utama")
 menu = st.sidebar.radio("Pilih Menu:", [
     "📊 Dashboard", 
     "📝 Isi Rekod Harian", 
-    "📋 Paparan Jadual & Export PDF",
-    "👥 Senarai Pengguna"
+    "📋 Paparan Jadual & Export PDF/Excel",
+    "👥 Senarai Pengguna & Leaderboard"
 ])
 
 df_user = df_all[df_all["Nama"].str.lower() == trader_name.lower()] if not df_all.empty else pd.DataFrame(columns=df_all.columns)
 
 st.title(f"📊 GOLD TRADING DASHBOARD | {trader_name.upper()}")
-st.markdown("Sistem jurnal harian XAUUSD profesional, semakan screenshot trade history, dan eksport laporan.")
+st.markdown("Sistem jurnal harian XAUUSD profesional bertaraf institusi dengan analisis terperinci.")
 st.markdown("---")
 
 # 1. DASHBOARD
@@ -163,7 +187,7 @@ if menu == "📊 Dashboard":
             st.subheader("Grafik Pertumbuhan Balance Gold")
             if "Hari" in df_user.columns and "Balance ($)" in df_user.columns:
                 chart_data = df_user.set_index("Hari")[["Balance ($)"]]
-                st.line_chart(chart_data, color="#22c55e")
+                st.line_chart(chart_data, color="#d4af37")
 
 # 2. ISI REKOD HARIAN
 elif menu == "📝 Isi Rekod Harian":
@@ -214,14 +238,14 @@ elif menu == "📝 Isi Rekod Harian":
             st.success(f"Rekod harian dan bukti screenshot untuk **{trader_name}** berjaya disimpan!")
             st.balloons()
 
-# 3. PAPARAN JADUAL & EXPORT PDF EKSKLUSIF
-elif menu == "📋 Paparan Jadual & Export PDF":
-    st.subheader(f"Jadual & Laporan PDF Eksklusif - [{trader_name}]")
+# 3. PAPARAN JADUAL & EXPORT PDF & EXCEL
+elif menu == "📋 Paparan Jadual & Export PDF/Excel":
+    st.subheader(f"Jadual & Eksport Laporan Eksklusif - [{trader_name}]")
     if df_user.empty:
         st.info("Tiada rekod lagi untuk trader ini.")
     else:
         display_df = df_user.drop(columns=["Nama"])
-        st.dataframe(display_df, use_column_width=True)
+        st.dataframe(display_df, use_container_width=True)
         
         st.markdown("### 🖼️ Semakan Screenshot Trade History")
         has_img = False
@@ -235,89 +259,107 @@ elif menu == "📋 Paparan Jadual & Export PDF":
             st.info("Tiada fail screenshot yang dimuat naik dalam rekod ini.")
             
         st.markdown("---")
+        st.markdown("### 📥 Muat Turun Laporan")
         
-        def draw_watermark(canvas, doc):
-            canvas.saveState()
-            logo_path = "image_15.png"
-            if os.path.exists(logo_path):
-                canvas.setFillAlpha(0.06)
-                canvas.drawImage(logo_path, 80, 250, width=450, height=250, preserveAspectRatio=True, mask='auto')
-            canvas.restoreState()
+        col_pdf, col_excel = st.columns(2)
+        
+        with col_pdf:
+            def draw_watermark(canvas, doc):
+                canvas.saveState()
+                logo_path = "image_15.png"
+                if os.path.exists(logo_path):
+                    canvas.setFillAlpha(0.06)
+                    canvas.drawImage(logo_path, 80, 250, width=450, height=250, preserveAspectRatio=True, mask='auto')
+                canvas.restoreState()
 
-        def generate_exclusive_pdf(dataframe, name):
-            buffer = BytesIO()
-            doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=25, leftMargin=25, topMargin=30, bottomMargin=30)
-            elements = []
-            styles = getSampleStyleSheet()
-            
-            title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], fontSize=16, textColor=colors.HexColor('#111827'), spaceAfter=4, alignment=1)
-            sub_style = ParagraphStyle('SubStyle', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor('#4b5563'), spaceAfter=15, alignment=1)
-            heading_style = ParagraphStyle('HeadingStyle', parent=styles['Heading2'], fontSize=11, textColor=colors.HexColor('#1f2937'), spaceAfter=6)
-            
-            elements.append(Paragraph(f"<b>PROFLEGACY TRADING INSTITUTION</b>", title_style))
-            elements.append(Paragraph(f"Laporan Rasmi Jurnal Gold (XAUUSD) — Trader: <b>{name.upper()}</b> | Tarikh: {datetime.date.today().strftime('%d-%m-%Y')}", sub_style))
-            
-            t_dep = dataframe["Deposit ($)"].sum()
-            t_pro = dataframe["Profit ($)"].sum()
-            t_los = dataframe["Loss ($)"].sum()
-            t_net = dataframe["Net P/L ($)"].sum()
-            
-            summary_data = [
-                ['Total Deposit', f"${t_dep:.2f}", 'Net P/L Keseluruhan', f"${t_net:.2f}"],
-                ['Total Profit', f"${t_pro:.2f}", 'Total Loss', f"${t_los:.2f}"]
-            ]
-            t_summary = Table(summary_data, colWidths=[130, 130, 130, 130])
-            t_summary.setStyle(TableStyle([
-                ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f8fafc')),
-                ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
-                ('PADDING', (0,0), (-1,-1), 6),
-                ('FONTNAME', (0,0), (-1,-1), 'Helvetica-Bold'),
-                ('FONTSIZE', (0,0), (-1,-1), 8),
-                ('TEXTCOLOR', (0,0), (-1,-1), colors.HexColor('#1e293b'))
-            ]))
-            elements.append(t_summary)
-            elements.append(Spacer(1, 12))
-            elements.append(Paragraph("<b>Log Ringkasan Prestasi Harian</b>", heading_style))
-            
-            pdf_table_df = dataframe.drop(columns=["Nama", "Screenshot"])
-            table_data = [list(pdf_table_df.columns)]
-            for _, row in pdf_table_df.iterrows():
-                table_data.append([str(val) for val in row.values])
+            def generate_exclusive_pdf(dataframe, name):
+                buffer = BytesIO()
+                doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=25, leftMargin=25, topMargin=30, bottomMargin=30)
+                elements = []
+                styles = getSampleStyleSheet()
                 
-            t_data = Table(table_data, repeatRows=1)
-            t_data.setStyle(TableStyle([
-                ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#0f172a')),
-                ('TEXTCOLOR', (0,0), (-1,0), colors.white),
-                ('ALIGN', (0,0), (-1,-1), 'CENTER'),
-                ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-                ('FONTSIZE', (0,0), (-1,0), 7),
-                ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
-                ('FONTSIZE', (0,1), (-1,-1), 6),
-                ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#f8fafc')])
-            ]))
-            elements.append(t_data)
-            
-            for _, row in dataframe.iterrows():
-                img_path = str(row.get("Screenshot", ""))
-                if img_path and os.path.exists(img_path):
-                    elements.append(Spacer(1, 15))
-                    elements.append(Paragraph(f"<b>Bukti Trade History - Hari Ke-{row['Hari']} ({row['Tarikh']})</b>", heading_style))
-                    try:
-                        elements.append(RLImage(img_path, width=400, height=220, preserveAspectRatio=True))
-                    except Exception:
-                        pass
-            
-            doc.build(elements, onFirstPage=draw_watermark, onLaterPages=draw_watermark)
-            buffer.seek(0)
-            return buffer
+                title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], fontSize=16, textColor=colors.HexColor('#111827'), spaceAfter=4, alignment=1)
+                sub_style = ParagraphStyle('SubStyle', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor('#4b5563'), spaceAfter=15, alignment=1)
+                heading_style = ParagraphStyle('HeadingStyle', parent=styles['Heading2'], fontSize=11, textColor=colors.HexColor('#1f2937'), spaceAfter=6)
+                
+                elements.append(Paragraph(f"<b>PROFLEGACY TRADING INSTITUTION</b>", title_style))
+                elements.append(Paragraph(f"Laporan Rasmi Jurnal Gold (XAUUSD) — Trader: <b>{name.upper()}</b> | Tarikh: {datetime.date.today().strftime('%d-%m-%Y')}", sub_style))
+                
+                t_dep = dataframe["Deposit ($)"].sum()
+                t_pro = dataframe["Profit ($)"].sum()
+                t_los = dataframe["Loss ($)"].sum()
+                t_net = dataframe["Net P/L ($)"].sum()
+                
+                summary_data = [
+                    ['Total Deposit', f"${t_dep:.2f}", 'Net P/L Keseluruhan', f"${t_net:.2f}"],
+                    ['Total Profit', f"${t_pro:.2f}", 'Total Loss', f"${t_los:.2f}"]
+                ]
+                t_summary = Table(summary_data, colWidths=[130, 130, 130, 130])
+                t_summary.setStyle(TableStyle([
+                    ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f8fafc')),
+                    ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
+                    ('PADDING', (0,0), (-1,-1), 6),
+                    ('FONTNAME', (0,0), (-1,-1), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0,0), (-1,-1), 8),
+                    ('TEXTCOLOR', (0,0), (-1,-1), colors.HexColor('#1e293b'))
+                ]))
+                elements.append(t_summary)
+                elements.append(Spacer(1, 12))
+                elements.append(Paragraph("<b>Log Ringkasan Prestasi Harian</b>", heading_style))
+                
+                pdf_table_df = dataframe.drop(columns=["Nama", "Screenshot"])
+                table_data = [list(pdf_table_df.columns)]
+                for _, row in pdf_table_df.iterrows():
+                    table_data.append([str(val) for val in row.values])
+                    
+                t_data = Table(table_data, repeatRows=1)
+                t_data.setStyle(TableStyle([
+                    ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#0f172a')),
+                    ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+                    ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+                    ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0,0), (-1,0), 7),
+                    ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
+                    ('FONTSIZE', (0,1), (-1,-1), 6),
+                    ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#f8fafc')])
+                ]))
+                elements.append(t_data)
+                
+                for _, row in dataframe.iterrows():
+                    img_path = str(row.get("Screenshot", ""))
+                    if img_path and os.path.exists(img_path):
+                        elements.append(Spacer(1, 15))
+                        elements.append(Paragraph(f"<b>Bukti Trade History - Hari Ke-{row['Hari']} ({row['Tarikh']})</b>", heading_style))
+                        try:
+                            elements.append(RLImage(img_path, width=400, height=220, preserveAspectRatio=True))
+                        except Exception:
+                            pass
+                
+                doc.build(elements, onFirstPage=draw_watermark, onLaterPages=draw_watermark)
+                buffer.seek(0)
+                return buffer
 
-        pdf_file = generate_exclusive_pdf(df_user, trader_name)
-        st.download_button(
-            label="📄 Muat Turun Report PDF Institusi & Bukti Screenshot",
-            data=pdf_file,
-            file_name=f"ProfLegacy_Exclusive_Report_{trader_name}_{datetime.date.today().strftime('%B_%Y')}.pdf",
-            mime="application/pdf"
-        )
+            pdf_file = generate_exclusive_pdf(df_user, trader_name)
+            st.download_button(
+                label="📄 Muat Turun Report PDF Institusi",
+                data=pdf_file,
+                file_name=f"ProfLegacy_Report_{trader_name}_{datetime.date.today().strftime('%B_%Y')}.pdf",
+                mime="application/pdf"
+            )
+            
+        with col_excel:
+            # Eksport ke Excel (.xlsx)
+            output_excel = BytesIO()
+            with pd.ExcelWriter(output_excel, engine='openpyxl') as writer:
+                display_df.to_excel(writer, index=False, sheet_name='Jurnal_Trade')
+            output_excel.seek(0)
+            
+            st.download_button(
+                label="📊 Muat Turun Data Excel (.xlsx)",
+                data=output_excel,
+                file_name=f"ProfLegacy_Journal_{trader_name}_{datetime.date.today().strftime('%Y%m%d')}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
         
         st.markdown("---")
         if st.button("Padam Rekod Saya"):
@@ -325,34 +367,44 @@ elif menu == "📋 Paparan Jadual & Export PDF":
             save_all_data(df_all)
             st.rerun()
 
-# 4. SENARAI PENGGUNA
-elif menu == "👥 Senarai Pengguna":
-    st.subheader("Senarai Nama Trader Yang Menggunakan Sistem")
-    st.markdown(f"*(Nota: Nilai Net P/L hanya dipaparkan untuk nama pemilik sesi semasa iaitu **{trader_name}**)*")
+# 4. SENARAI PENGGUNA & LEADERBOARD PRESTASI
+elif menu == "👥 Senarai Pengguna & Leaderboard":
+    st.subheader("👥 Senarai Nama Trader & Leaderboard Prestasi")
+    st.markdown(f"*(Nota: Nilai Net P/L ringgit hanya dipaparkan untuk nama pemilik sesi semasa iaitu **{trader_name}**)*")
     
     if df_all.empty:
         st.info("Belum ada sebarang data atau trader berdaftar dalam sistem.")
     else:
         active_traders = df_all["Nama"].unique()
-        user_summary = []
+        leaderboard_data = []
+        
         for name in active_traders:
             sub_df = df_all[df_all["Nama"] == name]
             total_net = sub_df["Net P/L ($)"].sum()
             total_entries = len(sub_df)
             
-            # Semak sama ada nama baris ini sepadan dengan nama trader yang sedang log masuk di sidebar
+            win_d = len(sub_df[sub_df["Profit ($)"] > 0])
+            wr = (win_d / total_entries) * 100 if total_entries > 0 else 0.0
+            
+            t_pro = sub_df["Profit ($)"].sum()
+            t_los = sub_df["Loss ($)"].sum()
+            pf = (t_pro / t_los) if t_los > 0 else (t_pro if t_pro > 0 else 0.0)
+            
             if name.lower() == trader_name.lower():
                 net_pl_display = f"${total_net:.2f}"
             else:
                 net_pl_display = "🔒 [Rahsia Peribadi]"
                 
-            user_summary.append({
+            leaderboard_data.append({
                 "Nama Trader": name,
-                "Jumlah Hari Rekod": total_entries,
+                "Jumlah Hari": total_entries,
+                "Winrate (%)": f"{wr:.1f}%",
+                "Profit Factor": f"{pf:.2f}",
                 "Net P/L Terkini ($)": net_pl_display
             })
             
-        st.dataframe(pd.DataFrame(user_summary), use_container_width=True, hide_index=True)
+        lb_df = pd.DataFrame(leaderboard_data)
+        st.dataframe(lb_df, use_container_width=True, hide_index=True)
         st.success(f"Jumlah keseluruhan trader aktif dalam sistem: {len(active_traders)} orang.")
 
 st.markdown("---")
