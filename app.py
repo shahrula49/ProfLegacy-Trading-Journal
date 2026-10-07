@@ -328,6 +328,8 @@ elif menu == "📋 Paparan Jadual & Export PDF":
 # 4. SENARAI PENGGUNA
 elif menu == "👥 Senarai Pengguna":
     st.subheader("Senarai Nama Trader Yang Menggunakan Sistem")
+    st.markdown(f"*(Nota: Nilai Net P/L hanya dipaparkan untuk nama pemilik sesi semasa iaitu **{trader_name}**)*")
+    
     if df_all.empty:
         st.info("Belum ada sebarang data atau trader berdaftar dalam sistem.")
     else:
@@ -337,10 +339,17 @@ elif menu == "👥 Senarai Pengguna":
             sub_df = df_all[df_all["Nama"] == name]
             total_net = sub_df["Net P/L ($)"].sum()
             total_entries = len(sub_df)
+            
+            # Semak sama ada nama baris ini sepadan dengan nama trader yang sedang log masuk di sidebar
+            if name.lower() == trader_name.lower():
+                net_pl_display = f"${total_net:.2f}"
+            else:
+                net_pl_display = "🔒 [Rahsia Peribadi]"
+                
             user_summary.append({
                 "Nama Trader": name,
                 "Jumlah Hari Rekod": total_entries,
-                "Net P/L Terkini ($)": f"${total_net:.2f}"
+                "Net P/L Terkini ($)": net_pl_display
             })
             
         st.dataframe(pd.DataFrame(user_summary), use_container_width=True, hide_index=True)
